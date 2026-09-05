@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Portal } from "./Portal";
 import type { Market, SectorKey, EsgReadiness } from "../types";
 import type { CommonProps } from "./types";
 import { SECTORS, SECTOR_KEYS, ESG_READINESS_IT, ESG_READINESS_EN } from "../constants";
@@ -218,7 +219,7 @@ export function CompanySetupScreen({
   const dimLabelRevenue = sec.dimUnit;
   const dimLabelEmployees:{it:string,en:string}={it:"dipendenti",en:"employees"};
   return <main className="csScreen" style={{position:"relative"}}>
-  {zoomWarnOpen&&<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setZoomWarnOpen(false)}>
+  {zoomWarnOpen&&<Portal><div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setZoomWarnOpen(false)}>
     <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"14px",padding:"28px 32px",maxWidth:"380px",width:"90vw",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.6)"}} onClick={e=>e.stopPropagation()}>
       <p style={{margin:"0 0 8px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4"}}>{isIt?"Attenzione":"Warning"}</p>
       <p style={{margin:"0 0 20px",fontSize:"15px",color:"#e8f5ef",lineHeight:1.5}}>{isIt?"Il rapporto di visualizzazione è ottimizzato per questa schermata. Sei sicuro di voler cambiare lo zoom?":"The display ratio is optimised for this screen. Are you sure you want to change the zoom?"}</p>
@@ -227,7 +228,7 @@ export function CompanySetupScreen({
         <button style={{padding:"8px 22px",borderRadius:"8px",border:"1px solid #c84040",background:"rgba(200,64,64,.12)",color:"#ff8080",fontSize:"14px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setZoomWarnOpen(false)}>{isIt?"Continua comunque":"Continue anyway"}</button>
       </div>
     </div>
-  </div>}
+  </div></Portal>}
   <div className="welcomeBlueBar"/>
     <header className="missionNav"><button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button><div className="missionProgress"><span className="activeDot"/> {isIt?"LA TUA AZIENDA":"YOUR COMPANY"}</div><button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button></header>
     <div className="csBody">
@@ -444,7 +445,7 @@ export function CompanyScreen({
     </div>;
   };
   return <main className="companyScreen">
-  {zoomWarnOpen&&<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setZoomWarnOpen(false)}>
+  {zoomWarnOpen&&<Portal><div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setZoomWarnOpen(false)}>
     <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"14px",padding:"28px 32px",maxWidth:"380px",width:"90vw",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.6)"}} onClick={e=>e.stopPropagation()}>
       <p style={{margin:"0 0 8px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4"}}>{isIt?"Attenzione":"Warning"}</p>
       <p style={{margin:"0 0 20px",fontSize:"15px",color:"#e8f5ef",lineHeight:1.5}}>{isIt?"Il rapporto di visualizzazione è ottimizzato per questa schermata. Sei sicuro di voler cambiare lo zoom?":"The display ratio is optimised for this screen. Are you sure you want to change the zoom?"}</p>
@@ -453,7 +454,7 @@ export function CompanyScreen({
         <button style={{padding:"8px 22px",borderRadius:"8px",border:"1px solid #c84040",background:"rgba(200,64,64,.12)",color:"#ff8080",fontSize:"14px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setZoomWarnOpen(false)}>{isIt?"Continua comunque":"Continue anyway"}</button>
       </div>
     </div>
-  </div>}
+  </div></Portal>}
     <div className="welcomeBlueBar"/>
     <header className="missionNav missionNavTrust"><button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button><div className="missionProgress"><span className="activeDot"/> COMPANY PROFILE</div>{renderTrustBar()}<div style={{display:"flex",alignItems:"center",gap:"8px",marginRight:"8px"}}><img src={`./characters/${profile}-neutral.png`} alt={name} style={{width:"36px",height:"36px",borderRadius:"50%",objectFit:"cover",border:"2px solid rgba(57,239,180,.35)",flexShrink:0}}/><div style={{display:"flex",flexDirection:"column",lineHeight:1.2}}><small style={{font:"700 8px var(--font-geist-mono,monospace)",letterSpacing:".12em",textTransform:"uppercase",color:"#39efb4"}}>ESG MANAGER</small><strong style={{fontSize:"12px",color:"#f2fff9",fontWeight:700}}>{name}</strong></div></div><button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button></header>
     {showGeo ? (
@@ -688,20 +689,44 @@ export function CompanyScreen({
           </button>
           {chosen&&<p className="companyRptDecision"><span>{isIt?"Motivo: ":"Reason: "}</span>{isIt?chosen.for.it:chosen.for.en}</p>}
           {frameworkChecks&&toggleFw&&(()=>{
-            const rows:[string,string,string][]=[
-              ["gresb",      "GRESB",                            isIt?"Globale – Real estate e infrastrutture":"Global – Real estate & infrastructure"],
-              ["cdp",        "CDP",                              isIt?"Globale":"Global"],
-              ["gri",        "GRI Standards",                    isIt?"Globale":"Global"],
-              ["sasb",       "SASB Standards",                   isIt?"Globale":"Global"],
-              ["tcfd",       "TCFD",                             isIt?"Globale":"Global"],
-              ["ghg",        "GHG Protocol – Scope 1, 2 e 3",   isIt?"Globale":"Global"],
-              ["sdg",        "UN Sustainable Development Goals", isIt?"Globale":"Global"],
-              ["sfdr",       "SFDR",                             isIt?"Unione europea – Servizi finanziari":"European Union – Financial services"],
-              ["secr",       "SECR",                             isIt?"Regno Unito":"United Kingdom"],
-              ["energystar", "ENERGY STAR",                      isIt?"Nord America":"North America"],
-              ["nabers",     "NABERS",                           isIt?"Australia":"Australia"],
+            type FwRow = {id:string; label:string; area:string};
+            const groups:{cat:{it:string,en:string}; rows:FwRow[]}[] = [
+              {
+                cat:{it:"GHG & Clima",en:"GHG & Climate"},
+                rows:[
+                  {id:"ghg",   label:"GHG Protocol – Scope 1, 2, 3", area:isIt?"Globale":"Global"},
+                  {id:"tcfd",  label:"TCFD",                          area:isIt?"Globale":"Global"},
+                  {id:"cdp",   label:"CDP",                           area:isIt?"Globale":"Global"},
+                ],
+              },
+              {
+                cat:{it:"ESG Reporting",en:"ESG Reporting"},
+                rows:[
+                  {id:"gri",  label:"GRI Standards",                    area:isIt?"Globale":"Global"},
+                  {id:"sasb", label:"SASB Standards",                    area:isIt?"Globale":"Global"},
+                  {id:"sdg",  label:"UN Sustainable Development Goals",  area:isIt?"Globale":"Global"},
+                  {id:"ifrs_s1", label:"IFRS S1",                        area:isIt?"Globale":"Global"},
+                  {id:"ifrs_s2", label:"IFRS S2",                        area:isIt?"Globale":"Global"},
+                ],
+              },
+              {
+                cat:{it:"Finanza & Mercati",en:"Finance & Markets"},
+                rows:[
+                  {id:"sfdr",  label:"SFDR",  area:isIt?"UE – Servizi finanziari":"EU – Financial services"},
+                  {id:"gresb", label:"GRESB", area:isIt?"Globale – Real estate e infrastrutture":"Global – Real estate & infrastructure"},
+                ],
+              },
+              {
+                cat:{it:"Regionali & Settoriali",en:"Regional & Sector"},
+                rows:[
+                  {id:"secr",       label:"SECR",       area:isIt?"Regno Unito":"United Kingdom"},
+                  {id:"energystar", label:"ENERGY STAR", area:isIt?"Nord America":"North America"},
+                  {id:"nabers",     label:"NABERS",      area:isIt?"Australia":"Australia"},
+                ],
+              },
             ];
-            const selected = rows.filter(([id])=>frameworkChecks[id]?.inUso||frameworkChecks[id]?.diInteresse);
+            const allRows = groups.flatMap(g=>g.rows);
+            const selected = allRows.filter(({id})=>frameworkChecks[id]?.inUso||frameworkChecks[id]?.diInteresse);
             return <>
               {/* Trigger + Avanti sulla stessa riga */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
@@ -713,7 +738,7 @@ export function CompanyScreen({
               </div>
               {/* Summary: selected list or fallback */}
               {selected.length>0
-                ? <div className="fwSummary">{selected.map(([id,label])=>{
+                ? <div className="fwSummary">{selected.map(({id,label})=>{
                     const c=frameworkChecks[id];
                     return <span key={id} className="fwSummaryChip">
                       {label}
@@ -723,8 +748,8 @@ export function CompanyScreen({
                   })}</div>
                 : <p className="fwSummaryEmpty">{isIt?"Nessun altro framework previsto.":"No other frameworks planned."}</p>
               }
-              {/* Popup */}
-              {fwOpen&&<div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setFwOpen(false)}}>
+              {/* Popup — montato via Portal per evitare il transform:scale del root */}
+              {fwOpen&&<Portal><div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setFwOpen(false)}}>
                 <div className="companyRptModal" style={{maxWidth:"1560px",width:"90vw"}}>
                   <div className="companyRptModalHead">
                     <p className="companyRptModalTitle">{isIt?`Altri framework di interesse di ${displayCompanyName}`:`Other frameworks of interest for ${displayCompanyName}`}</p>
@@ -740,13 +765,20 @@ export function CompanyScreen({
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map(([id,label,area])=>(
+                      {groups.map(group=>(
+                        <React.Fragment key={group.cat.it}>
+                          <tr style={{background:"transparent"}}>
+                            <td colSpan={4} style={{padding:"10px 0 4px",fontSize:"11px",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"#39efb4",borderTop:"1px solid rgba(57,239,180,.12)",background:"transparent"}}>{isIt?group.cat.it:group.cat.en}</td>
+                          </tr>
+                          {group.rows.map(({id,label,area})=>(
                         <tr key={id} className="fwRow">
                           <td className="fwTdLabel">{label}</td>
                           <td className="fwTdArea">{area}</td>
                           <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"inUso")}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
                           <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.diInteresse?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"diInteresse")}>{frameworkChecks[id]?.diInteresse?"☑":"☐"}</button></td>
                         </tr>
+                          ))}
+                        </React.Fragment>
                       ))}
                     </tbody>
                   </table>
@@ -754,11 +786,11 @@ export function CompanyScreen({
                     <button className="actionButton" onClick={()=>setFwOpen(false)}>{isIt?"Chiudi":"Close"}</button>
                   </div>
                 </div>
-              </div>}
+              </div></Portal>}
             </>;
           })()}
 
-          {rptOpen&&<div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setRptOpen(false)}}>
+          {rptOpen&&<Portal><div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setRptOpen(false)}}>
             <div className="companyRptModal">
               <div className="companyRptModalHead">
                 <p className="companyRptModalTitle">{isIt?"Seleziona il percorso di rendicontazione ESG più adatto:":"Select the most appropriate ESG reporting path:"}</p>
@@ -777,7 +809,7 @@ export function CompanyScreen({
                 ))}
               </div>
             </div>
-          </div>}
+          </div></Portal>}
         </>;
       })()}
     </section>

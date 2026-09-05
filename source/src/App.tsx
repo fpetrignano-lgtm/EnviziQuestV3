@@ -66,7 +66,7 @@ export default function Home(){
     return ()=>window.removeEventListener("keydown",handler);
   },[screen]);
   const [sustainabilityReportSince,setSustainabilityReportSince]=useState<number|"mai">(2024);
-  const FW_IDS=["gresb","cdp","gri","sasb","tcfd","ghg","sdg","sfdr","secr","energystar","nabers"] as const;
+  const FW_IDS=["gresb","cdp","gri","sasb","tcfd","ghg","sdg","sfdr","secr","energystar","nabers","ifrs_s1","ifrs_s2"] as const;
   type FwId=typeof FW_IDS[number];
   const [frameworkChecks,setFrameworkChecks]=useState<Record<FwId,{inUso:boolean,diInteresse:boolean}>>(()=>Object.fromEntries(FW_IDS.map(id=>[id,{inUso:false,diInteresse:false}])) as Record<FwId,{inUso:boolean,diInteresse:boolean}>);
   const toggleFw=(id:FwId,col:"inUso"|"diInteresse")=>setFrameworkChecks(prev=>({...prev,[id]:{...prev[id],[col]:!prev[id][col]}}));
