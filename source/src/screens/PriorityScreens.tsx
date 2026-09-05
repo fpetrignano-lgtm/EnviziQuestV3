@@ -893,10 +893,15 @@ export function PriorityMatrixScreen({
             });
           })()}
         </svg>
-        <div style={{display:"flex",justifyContent:"flex-end",padding:"8px 0 4px",width:"100%"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px"}}>
+          <p style={{margin:0,fontSize:"clamp(11px,0.95vw,13px)",color:"#5a9e88",lineHeight:1.45,maxWidth:"560px"}}>
+            {isIt
+              ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
+              : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face."}
+          </p>
           {pmFromBriefing
-            ? <button className="actionButton" onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
-            : <button className="actionButton" onClick={()=>setScreen("ilTuoReport")}>{isIt?"Inizia le sfide":"Start challenges"}<b> →</b></button>
+            ? <button className="actionButton" style={{flexShrink:0,width:"auto"}} onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
+            : <button className="actionButton" style={{flexShrink:0,width:"auto"}} onClick={()=>setScreen("ilTuoReport")}>{isIt?"Genera la sintesi e costruisci la roadmap":"Generate the summary and build the roadmap"}<b> →</b></button>
           }
         </div>
         {pmSelected&&<div className="pmPopoverOverlay" onClick={()=>setPmSelected(null)}>
