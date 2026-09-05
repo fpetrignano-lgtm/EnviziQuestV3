@@ -847,7 +847,7 @@ export function PriorityMatrixScreen({
           <text x={10} y={MATRIX_H/2} textAnchor="middle" fontSize="12" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3" transform={`rotate(-90,10,${MATRIX_H/2})`}>{isIt?"CRITICITÀ":"CRITICALITY"}</text>
           <rect x={toX(5.5)} y={0} width={PAD_L+MATRIX_W-toX(5.5)} height={MATRIX_H/2} fill="rgba(57,239,180,.04)"/>
           {(()=>{
-            const FONT=7.5; const LINE_H=9; const MAX_LINES=3;
+            const FONT=7.5; const LINE_H=9; const MAX_LINES=4;
             const CHAR_W=FONT*0.52; const PAD_X=6; const PAD_Y=4;
             const maxChars=Math.floor((MATRIX_W/9-PAD_X*2)/CHAR_W);
             const needMeta=allNeeds.map(n=>{
@@ -858,9 +858,7 @@ export function PriorityMatrixScreen({
               const vis=lines.slice(0,MAX_LINES);
               const bw=Math.max(...vis.map(l=>l.length))*CHAR_W+PAD_X*2;
               const bh=vis.length*LINE_H+PAD_Y*2+8;
-              const prioIdx=priorities.indexOf(n.priority);
-              const posInGroup=dataNeeds.filter(d=>d.priority===n.priority).findIndex(d=>d.id===n.id);
-              return {n,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit),rankLabel:`${prioIdx+1}.${posInGroup+1}`};
+              return {n,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit)};
             });
             for(let iter=0;iter<50;iter++){
               for(let i=0;i<needMeta.length;i++){
@@ -875,7 +873,7 @@ export function PriorityMatrixScreen({
                 m.ly=Math.max(m.bh/2+2,Math.min(MATRIX_H-m.bh/2-2,m.ly));
               }
             }
-            return needMeta.map(({n,vis,bw,bh,ox,oy,lx,ly,rankLabel})=>{
+            return needMeta.map(({n,vis,bw,bh,ox,oy,lx,ly})=>{
               const inFocus=n.relNorm>=focusMinR&&n.crit>=focusMinC;
               const nMission=needIdToMission[n.id]??-1;
               const isTransversal=nMission===-1;
@@ -889,7 +887,6 @@ export function PriorityMatrixScreen({
                 <text fontFamily="sans-serif" fontSize={FONT} fill={n.color} fontWeight="600">
                   {vis.map((line,i)=><tspan key={i} x={lx} y={ly-bh/2+PAD_Y+(i+0.85)*LINE_H} textAnchor="middle">{line}</tspan>)}
                 </text>
-                <text x={lx-bw/2+3} y={ly-bh/2+8} fontSize="6" fill={n.color} fontFamily="monospace" fontWeight="700" opacity="0.65">{rankLabel}</text>
                 {isTransversal&&pmMissionFilter!==null&&<text x={lx+bw/2-3} y={ly-bh/2+8} fontSize="5.5" fill="#f5c542" fontFamily="monospace" fontWeight="700" textAnchor="end" opacity="0.9">TRASV.</text>}
                 <text x={lx} y={ly+bh/2-3} fontSize="7" fill={n.color} fontFamily="monospace" fontWeight="700" opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
               </g>;
