@@ -143,16 +143,25 @@ interface MilestoneProps extends CommonProps {
 }
 
 export function MilestoneScreen({ language, profile, setLanguage, setScreen, reset, goBack, renderTrustBar, missionOutcomes, renderSaveBtn, name }: MilestoneProps) {
-  const isTrusted = missionOutcomes[0] === "positive";
+  const outcome = missionOutcomes[0] as "positive"|"warning"|"critical"|undefined;
+  const isTrusted = outcome === "positive";
+  const isWarning = outcome === "warning";
   const isIt = language === "it";
+  const milestoneTitle = isTrusted
+    ? (isIt ? "Missione 01 completata · Trusted ESG Data Manager sbloccato." : "Mission 01 complete · Trusted ESG Data Manager unlocked.")
+    : isWarning
+      ? (isIt ? "Missione 01 completata · Hai scelto un approccio graduale." : "Mission 01 complete · You chose a phased approach.")
+      : (isIt ? "Missione 01 completata · Hai rimandato la decisione sulla data foundation." : "Mission 01 complete · You deferred the data foundation decision.");
   const milestoneText = isTrusted
-    ? (isIt ? "Complimenti, hai sbloccato il livello Trusted ESG Data Manager." : "Congratulations, you have unlocked the Trusted ESG Data Manager level.")
-    : (isIt ? "Avviare la digitalizzazione dell\u2019ESG in modo semplice, con moduli per la raccolta dati e senza integrazione delle fonti, pu\u00f2 essere un\u2019ottima decisione per contenere costi e rischi iniziali. Anche in questo contesto IBM Envizi pu\u00f2 diventare fattore critico di successo per la tua iniziativa. Verifica quali requisiti della gestione dati sono comunque importanti per te e il valore di Envizi a supporto." : "Starting ESG digitalisation simply, with data collection forms and without source integration, can be an excellent decision to contain initial costs and risks. Even in this context, IBM Envizi can become a critical success factor for your initiative. Check which data management requirements are still important to you and the value Envizi can provide.");
+    ? (isIt ? "Una data foundation auditabile e integrata è la base di ogni analisi ESG credibile. Il tuo percorso di analisi continua con le missioni operative." : "An auditable and integrated data foundation is the basis of every credible ESG analysis. Your analytical journey continues with the operational missions.")
+    : isWarning
+      ? (isIt ? "Avviare la digitalizzazione ESG con moduli di raccolta dati può essere un'ottima decisione per contenere costi e rischi iniziali. Approfondisci quali requisiti della gestione dati restano importanti per il tuo contesto." : "Starting ESG digitalisation with data collection forms can be an excellent decision to contain initial costs and risks. Explore which data management requirements remain important for your context.")
+      : (isIt ? "Rimandare la data foundation significa che le analisi ESG future si baseranno su dati parziali. Verifica quali requisiti sono comunque rilevanti per te e il valore di Envizi a supporto." : "Deferring the data foundation means future ESG analyses will rely on partial data. Check which requirements are still relevant to you and the value Envizi can provide.");
   return (
     <main className="thankYouScreen">
       <header className="missionNav">
         <button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
-        <div className="missionProgress"><span className="activeDot"/> MILESTONE</div>
+        <div className="missionProgress"><span className="activeDot"/> MILESTONE · M01</div>
         <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
       </header>
       <section className="thankYouBody" style={{display:"grid",gridTemplateColumns:"1fr 1fr",alignItems:"center",gap:"0",padding:"0",overflow:"hidden"}}>
@@ -160,12 +169,14 @@ export function MilestoneScreen({ language, profile, setLanguage, setScreen, res
           <img src={`./characters/${profile}-${isTrusted?"success":"neutral"}.png`} alt={name} style={{width:"100%",height:"100%",objectFit:"cover",objectPosition:"center top",display:"block"}}/>
         </div>
         <div style={{padding:"3vw 4vw",display:"flex",flexDirection:"column",gap:"16px"}}>
-          <h1 style={{color:isTrusted?"#39efb4":"#ffc07c",fontSize:isTrusted?"clamp(24px,3vw,44px)":"clamp(28px,3vw,40px)",lineHeight:1.5,letterSpacing:"-.02em",margin:0}}>
-            {milestoneText}
+          <p className="resultEyebrow" style={{margin:0,letterSpacing:".16em"}}>{isIt?"MISSIONE 01 · DATA FOUNDATION":"MISSION 01 · DATA FOUNDATION"}</p>
+          <h1 style={{color:isTrusted?"#39efb4":isWarning?"#ffc07c":"#ff7777",fontSize:"clamp(22px,2.6vw,38px)",lineHeight:1.3,letterSpacing:"-.02em",margin:0}}>
+            {milestoneTitle}
           </h1>
+          <p style={{color:"#b0cfc4",fontSize:"clamp(13px,1.1vw,16px)",lineHeight:1.6,margin:0}}>{milestoneText}</p>
           <div style={{display:"flex",gap:"12px",flexWrap:"wrap"}}>
-            <button className="secondaryAction" onClick={()=>goBack()}>{isIt?"\u2190 Indietro":"\u2190 Back"}</button>
-            <button className="actionButton" style={{width:"auto",marginTop:0,padding:"12px 16px"}} onClick={()=>setScreen("asis")}>{isIt?"Approfondiamo perch\u00e9 Envizi \u2192":"Let\u2019s explore why Envizi \u2192"}</button>
+            <button className="secondaryAction" onClick={()=>goBack()}>{isIt?"← Indietro":"← Back"}</button>
+            <button className="actionButton" style={{width:"auto",marginTop:0,padding:"12px 16px"}} onClick={()=>setScreen("asis")}>{isIt?"Approfondisci con Envizi →":"Explore with Envizi →"}</button>
           </div>
           {renderSaveBtn(isIt)}
         </div>

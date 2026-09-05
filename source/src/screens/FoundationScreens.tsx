@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { DFRating, Outcome } from "../types";
 import type { CommonProps } from "./types";
 import {
@@ -69,20 +70,26 @@ interface DFProps extends CommonProps {
 
 export function DataFoundationScreen({ language, profile, setLanguage, setScreen, reset, renderTrustBar, dfRatings, setDfRating }: DFProps) {
   const isIt = language === "it";
+  const [showAll, setShowAll] = useState(false);
   const allRated = DF_REQUIREMENTS.every(r => dfRatings[r.id]);
   const dfScore = Object.values(dfRatings).reduce((s,v)=>s+(v==="medium"?7.5:v==="high"?10:0),0);
   const dfPct = Math.min(100,Math.round(dfScore));
   const dfHighVery = dfScore >= 50;
   const dfHighMaybe = dfScore >= 30;
   const dfHighlight = dfHighMaybe;
+  // Sort reqs: high first, then medium, then low/unrated — show top 5 unless showAll
+  const sortedReqs = [...DF_REQUIREMENTS].sort((a,b)=>{const order={"high":0,"medium":1,"low":2,undefined:3};return (order[dfRatings[a.id] as keyof typeof order]??3)-(order[dfRatings[b.id] as keyof typeof order]??3);});
+  const visibleReqs = showAll ? sortedReqs : sortedReqs.slice(0,5);
+  const adherenceLabel = (v:DFRating|undefined):string=>!v||v==="low"?(isIt?"Assente":"Absent"):v==="medium"?(isIt?"Parziale":"Partial"):(isIt?"Rilevante":"Relevant");
+  const adherenceColor = (v:DFRating|undefined):string=>!v||v==="low"?"#57606a":v==="medium"?"#ffc07c":"#39efb4";
   return <main className="dfScreen">
     <header className="missionNav missionNavTrust"><button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button><div className="missionProgress"><span className="activeDot"/> DATA FOUNDATION</div>{renderTrustBar()}<button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button></header>
     <div className="dfStickyBar">
       <div className="dfStickyLeft">
-        <p className="eyebrow">{isIt?"PERCHÉ SELEZIONARE IBM ENVIZI · DATA FOUNDATION":"WHY SELECT IBM ENVIZI · DATA FOUNDATION"}</p>
+        <p className="eyebrow">{isIt?"REQUISITI DATA FOUNDATION TARGET · MISSIONE 01":"DATA FOUNDATION TARGET REQUIREMENTS · MISSION 01"}</p>
         <h1>{isIt?"Quanto contano per te questi requisiti di data foundation?":"How important are these data foundation requirements for you?"}</h1>
         <p className="dfSubtitle">{isIt?"Basso = non in esame · Medio = in esame per il prossimo passo · Alto = urgente":"Low = not under review · Medium = under review for next step · High = urgent"}</p>
-        {dfHighlight&&<div className="dfScoreMsg"><span className="dfScoreMsgIcon">⬡</span><p>{dfHighVery?(isIt?"Molto probabilmente IBM Envizi è la soluzione per la tua azienda.":"IBM Envizi is very likely the right solution for your organisation."):(isIt?"Probabilmente IBM Envizi è la soluzione per la tua azienda.":"IBM Envizi is probably the right solution for your organisation.")}</p></div>}
+        {dfHighlight&&<div className="dfScoreMsg"><span className="dfScoreMsgIcon">⬡</span><p>{dfHighVery?(isIt?"Alta aderenza — la soluzione copre la maggior parte dei tuoi requisiti prioritari.":"High fit — the solution covers most of your priority requirements."):(isIt?"Aderenza parziale — approfondisci con il tuo team.":"Partial fit — explore further with your team.")}</p></div>}
       </div>
       <div className="dfStickyRight">
         <div className="dfScoreBox"><span className="dfScoreBoxLabel">{isIt?"Punteggio rilevanza":"Relevance score"}</span><strong className={dfHighlight?"dfScoreHigh":""}>{dfScore}<em>/100</em></strong><div className="dfScoreTrack"><span className="dfScoreFill" style={{width:`${dfPct}%`,background:dfHighVery?"#39efb4":"#ffc07c"}}/></div></div>
@@ -90,8 +97,26 @@ export function DataFoundationScreen({ language, profile, setLanguage, setScreen
         {!allRated&&<p className="dfHint">{isIt?"Valuta tutti i requisiti per continuare.":"Rate all requirements to continue."}</p>}
       </div>
     </div>
-    <div className="dfColHeaders"><div className="dfColH dfColHReq">{isIt?"Requisito · Valutazione":"Requirement · Rating"}</div><div className="dfColH dfColHCap">⬡ {isIt?"Capacità IBM Envizi":"IBM Envizi capability"}</div><div className="dfColH dfColHBen">{isIt?"Beneficio ESG Manager":"ESG Manager benefit"}</div></div>
-    <FoundationGrid reqs={DF_REQUIREMENTS as Req[]} ratings={dfRatings} setRating={setDfRating} language={language}/>
+    <div className="dfColHeaders"><div className="dfColH dfColHReq">{isIt?"Requisito · Priorità":"Requirement · Priority"}</div><div className="dfColH dfColHCap">{isIt?"Capacità della soluzione":"Solution capability"}</div><div className="dfColH dfColHBen">{isIt?"Beneficio ESG Manager":"ESG Manager benefit"}</div></div>
+    <div className="dfGrid">
+      {visibleReqs.map((req,i)=>{
+        const rating = dfRatings[req.id];
+        const isActive = rating === "medium" || rating === "high";
+        const pts = rating === "high" ? 10 : rating === "medium" ? 7.5 : 0;
+        const aColor = adherenceColor(rating);
+        const aLabel = adherenceLabel(rating);
+        return <div key={req.id} className={`dfRow${isActive?" dfRowActive":""}${rating==="low"?" dfRowLow":""}`}>
+          <div className="dfRowReq">
+            <div className="dfRowReqTop"><span className="dfItemNum">{String(i+1).padStart(2,"0")}</span><p className="dfItemQ">{isIt?req.it:req.en}</p><span className="dfAdherenceBadge" style={{borderColor:aColor,color:aColor}}>{aLabel}</span></div>
+            <div className="dfRatingGroup">{(["low","medium","high"] as DFRating[]).map(v=><button key={v} className={`dfRatingBtn dfRatingBtn--${v}${rating===v?" dfRatingBtnActive":""}`} onClick={()=>setDfRating(req.id,v)}>{isIt?(v==="low"?"Basso":v==="medium"?"Medio +7,5":"Alto +10"):(v==="low"?"Low":v==="medium"?"Medium +7.5":"High +10")}</button>)}</div>
+            {isActive&&<span className={`dfRowPts dfRowPts--${rating}`}>+{pts} pt</span>}
+          </div>
+          <div className={`dfRowCap${isActive?"":" dfRowColDim"}`}>{isActive?<><span className="dfRowColLabel">⬡ {isIt?"Soluzione":"Solution"}</span><p>{isIt?req.capIt:req.capEn}</p></>:<span className="dfRowColEmpty">—</span>}</div>
+          <div className={`dfRowBen${isActive?"":" dfRowColDim"}`}>{isActive?<><span className="dfRowColLabel">{isIt?"Beneficio":"Benefit"}</span><p>{isIt?req.benIt:req.benEn}</p></>:<span className="dfRowColEmpty">—</span>}</div>
+        </div>;
+      })}
+    </div>
+    {!showAll&&DF_REQUIREMENTS.length>5&&<div style={{textAlign:"center",padding:"12px 0"}}><button className="secondaryAction" onClick={()=>setShowAll(true)}>{isIt?`Mostra tutti (${DF_REQUIREMENTS.length})`:`Show all (${DF_REQUIREMENTS.length})`}</button></div>}
     <footer className="dfFooter"><p className="dfSources">{isIt?"Capacità basate su: ":"Capabilities based on: "}<a href="https://www.ibm.com/products/envizi/esg-data-management" target="_blank" rel="noreferrer">ESG Data Management ↗</a>{" · "}<a href="https://www.ibm.com/docs/en/envizi-esg-suite?topic=managing-normalizing-data" target="_blank" rel="noreferrer">{isIt?"Normalizzazione dati":"Data normalisation"} ↗</a>{" · "}<a href="https://www.ibm.com/products/envizi/scope-1-2-ghg-accounting-reporting" target="_blank" rel="noreferrer">Scope 1–2 GHG ↗</a></p></footer>
   </main>;
 }
@@ -104,8 +129,8 @@ interface DFConclusionProps extends CommonProps {
 
 export function DFConclusionScreen({ language, profile, setLanguage, setScreen, reset, renderTrustBar, dfRatings, missionOutcomes, t }: DFConclusionProps) {
   const isIt = language === "it";
+  const [showAllConclusion, setShowAllConclusion] = useState(false);
   const dfScore = Object.values(dfRatings).reduce((s,v)=>s+(v==="medium"?7.5:v==="high"?10:0),0);
-  const dfPct = Math.min(100,Math.round(dfScore));
   const dfHighVery = dfScore >= 50;
   const dfHighMaybe = dfScore >= 30;
   const dfHighlight = dfHighMaybe;
@@ -114,28 +139,45 @@ export function DFConclusionScreen({ language, profile, setLanguage, setScreen, 
   const decisionImg = m0outcome === "positive" ? "./envizi-data-automation.png" : m0outcome === "warning" ? "./envizi-manual-forms.png" : "./envizi-spreadsheets-email.png";
   const decisionColor = m0outcome === "positive" ? "#39efb4" : m0outcome === "warning" ? "#ffc07c" : "#ff7777";
   const accentColor = dfHighVery ? "#39efb4" : dfHighMaybe ? "#ffc07c" : "#57606a";
-  return <main className="dfScreen">
+  // Build ordered list: high first, then medium
+  const priorityReqs = [
+    ...DF_REQUIREMENTS.filter(r=>dfRatings[r.id]==="high"),
+    ...DF_REQUIREMENTS.filter(r=>dfRatings[r.id]==="medium"),
+  ];
+  const visibleConclusion = showAllConclusion ? priorityReqs : priorityReqs.slice(0,3);
+  return <main className="dfScreen" style={{display:"flex",flexDirection:"column",height:"1080px",overflow:"hidden"}}>
     <header className="missionNav missionNavTrust"><button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button><div className="missionProgress"><span className="activeDot"/> DATA FOUNDATION</div>{renderTrustBar()}<button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button></header>
-    <div className="dfConclusionBody">
+    <div className="dfConclusionBody" style={{flex:1,overflow:"hidden"}}>
       <div className="dfcLeft">
-        <p className="eyebrow" style={{letterSpacing:".18em",fontSize:"22px"}}>{isIt?"CONCLUSIONI · DATA FOUNDATION":"CONCLUSIONS · DATA FOUNDATION"}</p>
+        <p className="eyebrow" style={{letterSpacing:".18em",fontSize:"clamp(11px,1.1vw,16px)"}}>{isIt?"CONCLUSIONI · DATA FOUNDATION":"CONCLUSIONS · DATA FOUNDATION"}</p>
         <h1 className="dfcTitle" style={{fontWeight:800,lineHeight:1.1,marginBottom:4}}>{isIt?"La tua scelta per la gestione dei dati ESG":"Your ESG data management choice"}</h1>
         <div className="dfcGaugeWrap">
           <ConclusionGauge score={dfScore} max={100} accentColor={accentColor} isIt={isIt}/>
-          <p className="dfcGaugeVerdict" style={{color:dfHighVery?"#39efb4":dfHighMaybe?"#ffc07c":"#7a9a90"}}>{dfHighVery?(isIt?"Molto probabilmente IBM Envizi è la soluzione per la tua azienda.":"IBM Envizi is very likely the right solution for your organisation."):dfHighMaybe?(isIt?"Probabilmente IBM Envizi è la soluzione per la tua azienda.":"IBM Envizi is probably the right solution for your organisation."):(isIt?"Approfondisci con il tuo team IBM.":"Explore further with your IBM team.")}</p>
+          <p className="dfcGaugeVerdict" style={{color:dfHighVery?"#39efb4":dfHighMaybe?"#ffc07c":"#7a9a90"}}>{dfHighVery?(isIt?"Alta aderenza — la soluzione copre la maggior parte dei tuoi requisiti prioritari.":"High fit — the solution covers most of your priority requirements."):dfHighMaybe?(isIt?"Aderenza parziale — approfondisci con il tuo team.":"Partial fit — explore further with your team."):(isIt?"Approfondisci con il tuo team.":"Explore further with your team.")}</p>
         </div>
         {decisionTaken&&<div className="dfcDecisionCard" style={{borderColor:decisionColor+"55"}}><img src={decisionImg} alt={decisionTaken} className="dfcDecisionCardImg"/><div className="dfcDecisionCardBody"><small className="dfcDecisionCardLabel">{isIt?"DECISIONE ADOTTATA · MISSIONE 01":"DECISION ADOPTED · MISSION 01"}</small><strong className="dfcDecisionCardValue" style={{color:decisionColor}}>{decisionTaken}</strong></div></div>}
-        <div className="dfcActions">
+        <div className="dfcActions" style={{marginTop:"auto",paddingTop:"12px"}}>
           <button className="actionButton dfcActionSecondary" onClick={()=>setScreen("dataFoundation")}>{isIt?"← Indietro":"← Back"}</button>
           <button className="actionButton" style={{whiteSpace:"nowrap"}} onClick={()=>setScreen("challengeComplete1")}>{isIt?"Prossima sfida →":"Next challenge →"}</button>
         </div>
       </div>
-      <div className="dfcRight">
-        {dfHighlight&&<p className="dfcIntroTitle">{isIt?"Perché Envizi risponde alle tue priorità:":"Why Envizi addresses your priorities:"}</p>}
-        {([
-          {reqs:DF_REQUIREMENTS.filter(r=>dfRatings[r.id]==="high"),accent:"#39efb4",label:isIt?"FATTORI MOLTO RILEVANTI":"HIGHLY RELEVANT FACTORS"},
-          {reqs:DF_REQUIREMENTS.filter(r=>dfRatings[r.id]==="medium"),accent:"#ffc07c",label:isIt?"FATTORI MEDIAMENTE RILEVANTI":"MODERATELY RELEVANT FACTORS"},
-        ] as {reqs:Req[],accent:string,label:string}[]).map(({reqs:rs,accent,label})=>rs.length>0&&<section key={label} className="dfcSection"><p className="dfcSectionLabel" style={{color:accent}}>{label}</p>{rs.map(r=><div key={r.id} className="dfcHRow" style={{"--dfcAccent":accent} as React.CSSProperties}><p className="dfcHRowTitle">{isIt?r.it:r.en}</p><div className="dfcHChips"><div className="dfcHChip dfcHChipCrit"><span className="dfcHChipLabel">{isIt?"Criticità tipica":"Typical issue"}</span><p className="dfcHChipText">{isIt?(r as any).critIt:(r as any).critEn}</p></div><div className="dfcHChip dfcHChipCap"><span className="dfcHChipLabel">{isIt?"Capacità Envizi":"Envizi capability"}</span><p className="dfcHChipText">{isIt?r.capIt:r.capEn}</p></div><div className="dfcHChip dfcHChipToBe"><span className="dfcHChipLabel">{isIt?"To-be con Envizi":"To-be with Envizi"}</span><p className="dfcHChipText">{isIt?(r as any).toBeIt:(r as any).toBeEn}</p></div><div className="dfcHChip dfcHChipBen"><span className="dfcHChipLabel">{isIt?"Beneficio":"Benefit"}</span><p className="dfcHChipText">{isIt?r.benIt:r.benEn}</p></div></div></div>)}</section>)}
+      <div className="dfcRight" style={{overflowY:"auto"}}>
+        {dfHighlight&&<p className="dfcIntroTitle">{isIt?"Obiettivo → Esigenza → AS-IS → Gap → Capacità → Beneficio:":"Objective → Need → AS-IS → Gap → Capability → Benefit:"}</p>}
+        {visibleConclusion.map(r=>{
+          const rating = dfRatings[r.id];
+          const accent = rating==="high"?"#39efb4":"#ffc07c";
+          return <div key={r.id} className="dfcHRow" style={{"--dfcAccent":accent} as React.CSSProperties}>
+            <p className="dfcHRowTitle" style={{color:accent}}>{isIt?r.it:r.en}</p>
+            <div className="dfcHChips">
+              <div className="dfcHChip dfcHChipCrit"><span className="dfcHChipLabel">{isIt?"Gap AS-IS":"AS-IS gap"}</span><p className="dfcHChipText">{isIt?(r as any).critIt:(r as any).critEn}</p></div>
+              <div className="dfcHChip dfcHChipCap"><span className="dfcHChipLabel">{isIt?"Capacità soluzione":"Solution capability"}</span><p className="dfcHChipText">{isIt?r.capIt:r.capEn}</p></div>
+              <div className="dfcHChip dfcHChipToBe"><span className="dfcHChipLabel">{isIt?"Copertura target (To-be)":"Target coverage (To-be)"}</span><p className="dfcHChipText">{isIt?(r as any).toBeIt:(r as any).toBeEn}</p></div>
+              <div className="dfcHChip dfcHChipBen"><span className="dfcHChipLabel">{isIt?"Beneficio":"Benefit"}</span><p className="dfcHChipText">{isIt?r.benIt:r.benEn}</p></div>
+            </div>
+          </div>;
+        })}
+        {!showAllConclusion&&priorityReqs.length>3&&<button className="secondaryAction" style={{marginTop:"8px",width:"100%"}} onClick={()=>setShowAllConclusion(true)}>{isIt?`Mostra tutti (${priorityReqs.length})`:`Show all (${priorityReqs.length})`}</button>}
+        {!dfHighlight&&<p style={{color:"#57606a",fontSize:"clamp(12px,1vw,14px)",fontStyle:"italic"}}>{isIt?"Nessun requisito selezionato come medio o alto. Torna indietro per rivalutare.":"No requirement rated medium or high. Go back to re-evaluate."}</p>}
       </div>
     </div>
   </main>;

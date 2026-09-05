@@ -34,16 +34,25 @@ export function Compare({
 }:Props){
   const m0=selectedMission===0;
   const isIt=language==="it";
+  // 6 dimensioni di confronto — vendor-neutral
+  type DimScore=1|2|3|4|5;
+  const DIMS:{it:string,en:string}[]=[
+    {it:"Copertura funzionale",en:"Functional coverage"},
+    {it:"Facilità di implementazione",en:"Ease of implementation"},
+    {it:"Qualità e tracciabilità del dato",en:"Data quality & traceability"},
+    {it:"Scalabilità nel tempo",en:"Scalability over time"},
+    {it:"Integrazione con sistemi esistenti",en:"Integration with existing systems"},
+    {it:"Costo totale di ownership",en:"Total cost of ownership"},
+  ];
+  const DIM_SCORES:Record<string,DimScore[]>={
+    critical:[1,5,1,1,2,5],
+    warning: [3,3,3,3,3,3],
+    positive:[5,2,5,5,4,2],
+  };
   const options=[
-    {key:"critical" as Outcome,title:active.optionC,detail:active.optionCDetail,img:MISSION_IMGS.critical[selectedMission],
-      solutionTag:m0?(isIt?"IBM Envizi Servizio Gestito":"IBM Envizi Managed Service"):undefined,
-      solutionDetail:m0?(isIt?"Sperimenta con un nostro partner la gestione dei dati ESG.":"Experience ESG data management with one of our partners."):undefined},
-    {key:"warning" as Outcome,title:active.optionB,detail:active.optionBDetail,img:MISSION_IMGS.warning[selectedMission],
-      solutionTag:m0?(isIt?"IBM Envizi Standard":"IBM Envizi Standard"):undefined,
-      solutionDetail:m0?(isIt?"Modulo Data Foundation. Semplicità e velocità pronti per evolvere con i tuoi bisogni.":"Data Foundation Module. Simplicity and speed, ready to evolve with your needs."):undefined},
-    {key:"positive" as Outcome,title:active.optionA,tag:(active as any).optionATag as string|undefined,detail:active.optionADetail,img:MISSION_IMGS.positive[selectedMission],
-      solutionTag:m0?(isIt?"IBM Envizi Premium":"IBM Envizi Premium"):undefined,
-      solutionDetail:m0?(isIt?"Modulo Data Foundation e Connettori. Automazione e Affidabilità a portata di mano.":"Data Foundation Module and Connectors. Automation and Reliability at your fingertips."):undefined},
+    {key:"critical" as Outcome,title:active.optionC,detail:active.optionCDetail,img:MISSION_IMGS.critical[selectedMission]},
+    {key:"warning" as Outcome,title:active.optionB,detail:active.optionBDetail,img:MISSION_IMGS.warning[selectedMission]},
+    {key:"positive" as Outcome,title:active.optionA,tag:(active as any).optionATag as string|undefined,detail:active.optionADetail,img:MISSION_IMGS.positive[selectedMission]},
   ];
   const currentRatings=asIsRatings[selectedMission]||(active.asIsItems.map(()=>"alto" as "alto"|"medio"|"basso"));
   const ratingVal={"alto":25,"medio":12,"basso":0};
@@ -80,6 +89,16 @@ export function Compare({
                 </div>
                 <div className="compareRowTop">
                   <p className="compareDetail">{opt.detail}</p>
+                </div>
+                <div className="compareDimTable" style={{padding:"8px 12px",borderTop:"1px solid rgba(255,255,255,.08)"}}>
+                  {DIMS.map((dim,di)=>{
+                    const score=DIM_SCORES[opt.key][di];
+                    const color=score>=4?"#39efb4":score>=3?"#7dd3fc":"#9ca3af";
+                    return <div key={di} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:"11px",padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                      <span style={{color:"#aac8be"}}>{isIt?dim.it:dim.en}</span>
+                      <span style={{color,fontWeight:700,fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".05em"}}>{"●".repeat(score)}{"○".repeat(5-score)}</span>
+                    </div>;
+                  })}
                 </div>
               </article>
             </div>

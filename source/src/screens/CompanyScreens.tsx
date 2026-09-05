@@ -234,9 +234,14 @@ export function CompanySetupScreen({
       <div className="csLeft"><img className="csProfileImg" src={`./characters/${profile}-neutral.png`} alt={name}/><div className="csProfileTag"><span className="statusDot"/><div><small>ESG MANAGER</small><strong>{name}</strong></div></div></div>
       <div className="csRight">
         <p className="eyebrow">{isIt?"RACCONTACI LA TUA AZIENDA":"TELL US ABOUT YOUR COMPANY"}</p>
-        <h1 className="csTitle">{isIt?"La tua azienda":"Your company"}</h1>
+        <h1 className="csTitle">{companyName.trim()||(isIt?"La tua azienda":"Your company")}</h1>
         <div className="csFormOneCol">
-        <div className="csField csFieldName"><label>{isIt?"Nome Azienda":"Company Name"}<span className="csNameHint">{isIt?"· inserisci il nome della tua azienda":"· enter your company name"}</span></label><input className="csInput csInputName" placeholder={isIt?"Es. Acme S.p.A.":"E.g. Acme Ltd"} value={companyName||questName} onChange={e=>setCompanyName(e.target.value)}/></div>
+        <div className="csField csFieldName">
+          <label>{isIt?"Nome Azienda":"Company Name"}
+            {questName.trim()&&<span className="csNameHint" style={{marginLeft:"8px",color:"#57a88a",fontSize:"12px"}}>· {isIt?"sessione":"session"}: <em>{questName}</em></span>}
+          </label>
+          <input className="csInput csInputName" placeholder={isIt?"Es. Acme S.p.A.":"E.g. Acme Ltd"} value={companyName} onChange={e=>setCompanyName(e.target.value)}/>
+        </div>
           <div className="csField">
             <label>{isIt?"Logo azienda (opzionale)":"Company logo (optional)"}</label>
             <div style={{display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
@@ -481,8 +486,9 @@ export function CompanyScreen({
           altro:  (<svg viewBox="0 0 20 20" width="18" height="18"><path d="M10,2 C6.69,2 4,4.69 4,8 C4,12.5 10,18 10,18 C10,18 16,12.5 16,8 C16,4.69 13.31,2 10,2 Z" fill="currentColor" opacity=".25"/><path d="M10,2 C6.69,2 4,4.69 4,8 C4,12.5 10,18 10,18 C10,18 16,12.5 16,8 C16,4.69 13.31,2 10,2 Z" fill="none" stroke="currentColor" strokeWidth="1.4"/><circle cx="10" cy="8" r="2.5" fill="currentColor" opacity=".7"/></svg>),
         };
         const hasAnySedes = GEO_KEYS.some(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
-        const extraGeos = GEO_KEYS.slice(4).filter(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
-        const visibleGeos = [...GEO_KEYS.slice(0,4), ...extraGeos];
+        const geosWithData = GEO_KEYS.filter(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
+        const geosEmpty = GEO_KEYS.filter(g=>!geosWithData.includes(g));
+        const visibleGeos = [...geosWithData, ...geosEmpty];
         const REF_UNITS = "kWh · km · m³ · L";
         const REF_CURR  = "EUR · ...";
         const activePop = GEO_KEYS.filter(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
@@ -663,20 +669,29 @@ export function CompanyScreen({
           </button>
           {chosen&&<p className="companyRptDecision"><span>{isIt?"Motivo: ":"Reason: "}</span>{isIt?chosen.for.it:chosen.for.en}</p>}
           {frameworkChecks&&toggleFw&&(()=>{
-            const rows:[string,string,string][]=[
-              ["gresb",      "GRESB",                            isIt?"Globale – Real estate e infrastrutture":"Global – Real estate & infrastructure"],
-              ["cdp",        "CDP",                              isIt?"Globale":"Global"],
-              ["gri",        "GRI Standards",                    isIt?"Globale":"Global"],
-              ["sasb",       "SASB Standards",                   isIt?"Globale":"Global"],
-              ["tcfd",       "TCFD",                             isIt?"Globale":"Global"],
-              ["ghg",        "GHG Protocol – Scope 1, 2 e 3",   isIt?"Globale":"Global"],
-              ["sdg",        "UN Sustainable Development Goals", isIt?"Globale":"Global"],
-              ["sfdr",       "SFDR",                             isIt?"Unione europea – Servizi finanziari":"European Union – Financial services"],
-              ["secr",       "SECR",                             isIt?"Regno Unito":"United Kingdom"],
-              ["energystar", "ENERGY STAR",                      isIt?"Nord America":"North America"],
-              ["nabers",     "NABERS",                           isIt?"Australia":"Australia"],
+            type FwRow={id:string,label:string,area:string,cat:string,envirCov:string,legacy?:boolean};
+            const fwCategories:{key:string,it:string,en:string}[]=[
+              {key:"ghg",it:"GHG & Clima",en:"GHG & Climate"},
+              {key:"esg",it:"ESG Reporting",en:"ESG Reporting"},
+              {key:"finance",it:"Finanza & Mercati",en:"Finance & Markets"},
+              {key:"regional",it:"Regionali & Settoriali",en:"Regional & Sectoral"},
             ];
-            const selected = rows.filter(([id])=>frameworkChecks[id]?.inUso||frameworkChecks[id]?.diInteresse);
+            const rows:FwRow[]=[
+              {id:"ghg",     label:"GHG Protocol – Scope 1, 2 e 3",  area:isIt?"Globale":"Global",              cat:"ghg",      envirCov:isIt?"Alta — Scope 1/2/3, factor library":"High — Scope 1/2/3, factor library"},
+              {id:"tcfd",    label:"TCFD",                            area:isIt?"Globale (legacy)":"Global (legacy)", cat:"ghg", envirCov:isIt?"Media — scenario analysis":"Medium — scenario analysis", legacy:true},
+              {id:"ifrs_s1", label:"IFRS S1 (Requisiti generali)",    area:isIt?"Globale":"Global",              cat:"ghg",      envirCov:isIt?"Media — qualitativa":"Medium — qualitative"},
+              {id:"ifrs_s2", label:"IFRS S2 (Clima)",                 area:isIt?"Globale":"Global",              cat:"ghg",      envirCov:isIt?"Alta — metriche clima/Scope":"High — climate/Scope metrics"},
+              {id:"gri",     label:"GRI Standards",                   area:isIt?"Globale":"Global",              cat:"esg",      envirCov:isIt?"Alta — temi E, S, G, catena valore":"High — E, S, G, value chain topics"},
+              {id:"sasb",    label:"SASB Standards",                  area:isIt?"Globale":"Global",              cat:"esg",      envirCov:isIt?"Media — metriche settoriali":"Medium — sector metrics"},
+              {id:"cdp",     label:"CDP",                             area:isIt?"Globale":"Global",              cat:"esg",      envirCov:isIt?"Alta — clima, acqua, foreste":"High — climate, water, forests"},
+              {id:"sdg",     label:"UN Sustainable Development Goals",area:isIt?"Globale":"Global",              cat:"esg",      envirCov:isIt?"Media — mapping obiettivi":"Medium — goals mapping"},
+              {id:"sfdr",    label:"SFDR",                            area:isIt?"UE – Servizi finanziari":"EU – Financial services", cat:"finance", envirCov:isIt?"Media — PAI indicators":"Medium — PAI indicators"},
+              {id:"gresb",   label:"GRESB",                           area:isIt?"Globale – Real estate":"Global – Real estate", cat:"regional",  envirCov:isIt?"Alta — energie, acque, rifiuti":"High — energy, water, waste"},
+              {id:"secr",    label:"SECR",                            area:isIt?"Regno Unito":"United Kingdom",  cat:"regional", envirCov:isIt?"Alta — energia e Scope 1/2":"High — energy & Scope 1/2"},
+              {id:"energystar",label:"ENERGY STAR",                   area:isIt?"Nord America":"North America",  cat:"regional", envirCov:isIt?"Alta — efficienza energetica":"High — energy efficiency"},
+              {id:"nabers",  label:"NABERS",                          area:isIt?"Australia":"Australia",         cat:"regional", envirCov:isIt?"Alta — efficienza energetica":"High — energy efficiency"},
+            ];
+            const selected = rows.filter(r=>frameworkChecks[r.id]?.inUso||frameworkChecks[r.id]?.diInteresse);
             return <>
               {/* Trigger + Avanti sulla stessa riga */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
@@ -688,10 +703,10 @@ export function CompanyScreen({
               </div>
               {/* Summary: selected list or fallback */}
               {selected.length>0
-                ? <div className="fwSummary">{selected.map(([id,label])=>{
-                    const c=frameworkChecks[id];
-                    return <span key={id} className="fwSummaryChip">
-                      {label}
+                ? <div className="fwSummary">{selected.map(r=>{
+                    const c=frameworkChecks[r.id];
+                    return <span key={r.id} className="fwSummaryChip">
+                      {r.label}{r.legacy&&<span style={{fontSize:"10px",color:"#f5a623",marginLeft:"4px"}}>(legacy)</span>}
                       {c?.inUso&&<span className="fwSummaryTag fwSummaryTagUso">{isIt?"in uso":"in use"}</span>}
                       {c?.diInteresse&&<span className="fwSummaryTag fwSummaryTagInt">{isIt?"di interesse":"of interest"}</span>}
                     </span>;
@@ -700,31 +715,41 @@ export function CompanyScreen({
               }
               {/* Popup */}
               {fwOpen&&<div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setFwOpen(false)}}>
-                <div className="companyRptModal" style={{maxWidth:"1560px",width:"90vw"}}>
+                <div className="companyRptModal" style={{maxWidth:"1600px",width:"95vw"}}>
                   <div className="companyRptModalHead">
-                    <p className="companyRptModalTitle">{isIt?`Altri framework di interesse di ${displayCompanyName}`:`Other frameworks of interest for ${displayCompanyName}`}</p>
+                    <p className="companyRptModalTitle">{isIt?`Framework di riferimento — ${displayCompanyName}`:`Reference frameworks — ${displayCompanyName}`}</p>
                     <button className="companyRptModalClose" onClick={()=>setFwOpen(false)}>✕</button>
                   </div>
-                  <table className="fwTable">
-                    <thead>
-                      <tr>
-                        <th className="fwThLabel">{isIt?"Framework / requisito":"Framework / requirement"}</th>
-                        <th className="fwThArea">Area</th>
-                        <th className="fwThCheck">{isIt?"In uso":"In use"}</th>
-                        <th className="fwThCheck">{isIt?"Di interesse":"Of interest"}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map(([id,label,area])=>(
-                        <tr key={id} className="fwRow">
-                          <td className="fwTdLabel">{label}</td>
-                          <td className="fwTdArea">{area}</td>
-                          <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"inUso")}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
-                          <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.diInteresse?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"diInteresse")}>{frameworkChecks[id]?.diInteresse?"☑":"☐"}</button></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  {fwCategories.map(cat=>{
+                    const catRows=rows.filter(r=>r.cat===cat.key);
+                    return (
+                      <div key={cat.key} style={{marginBottom:"20px"}}>
+                        <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:700,letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4"}}>{isIt?cat.it:cat.en}</p>
+                        <table className="fwTable" style={{width:"100%",marginBottom:0}}>
+                          <thead>
+                            <tr>
+                              <th className="fwThLabel">{isIt?"Framework / requisito":"Framework / requirement"}</th>
+                              <th className="fwThArea">Area</th>
+                              <th className="fwThCheck" style={{minWidth:"140px"}}>{isIt?"Copertura Envizi":"Envizi coverage"}</th>
+                              <th className="fwThCheck">{isIt?"In uso":"In use"}</th>
+                              <th className="fwThCheck">{isIt?"Di interesse":"Of interest"}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {catRows.map(r=>(
+                              <tr key={r.id} className="fwRow">
+                                <td className="fwTdLabel">{r.label}{r.legacy&&<span style={{fontSize:"10px",color:"#f5a623",marginLeft:"6px",fontStyle:"italic"}}>(legacy)</span>}</td>
+                                <td className="fwTdArea">{r.area}</td>
+                                <td className="fwTdArea" style={{fontSize:"11px",color:"#7dcfad"}}>{r.envirCov}</td>
+                                <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[r.id]?.inUso?" fwCheckOn":""}`} onClick={()=>toggleFw(r.id,"inUso")}>{frameworkChecks[r.id]?.inUso?"☑":"☐"}</button></td>
+                                <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[r.id]?.diInteresse?" fwCheckOn":""}`} onClick={()=>toggleFw(r.id,"diInteresse")}>{frameworkChecks[r.id]?.diInteresse?"☑":"☐"}</button></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })}
                   <div style={{display:"flex",justifyContent:"flex-end",marginTop:"20px"}}>
                     <button className="actionButton" onClick={()=>setFwOpen(false)}>{isIt?"Chiudi":"Close"}</button>
                   </div>
