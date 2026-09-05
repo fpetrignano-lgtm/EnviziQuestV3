@@ -1224,15 +1224,32 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     if (i === 2) {
       xmlStr = fixSlide2ReadinessFont(xmlStr);
 
+      // Add hyperlink relationship for Consiglio dell'UE
+      const csrdHlinkRid = "rId998";
+      const csrdHlinkUrl = "https://www.consilium.europa.eu/en/press/press-releases/2026/02/24/council-signs-off-simplification-of-sustainability-reporting-and-due-diligence-requirements-to-boost-eu-competitiveness/";
+      const relsPath2 = "ppt/slides/_rels/slide2.xml.rels";
+      const relsFile2 = zip.file(relsPath2);
+      if (relsFile2) {
+        let relsXml2 = await relsFile2.async("string");
+        if (!relsXml2.includes(csrdHlinkRid)) {
+          relsXml2 = relsXml2.replace(
+            "</Relationships>",
+            `<Relationship Id="${csrdHlinkRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="${csrdHlinkUrl}" TargetMode="External"/></Relationships>`
+          );
+          zip.file(relsPath2, relsXml2);
+        }
+      }
+
       // Build CSRD sentence from csrdLabel (e.g. "Non soggetta a CSRD") + optional csrdSub
       const csrdSentence = data.csrdSub
         ? `${data.csrdLabel} — ${data.csrdSub}`
         : data.csrdLabel;
+      const csrdLinkLabel = isIt ? "Consiglio dell'UE" : "EU Council";
 
-      // Inject as a new text shape spanning the full width, just below the two card blocks
-      // Card blocks bottom: y=5829300; footer: y=6534150 → centre in gap ≈ y=5900000
+      // Inject as a new text shape: CSRD sentence + clickable link on same line
       const csrdRPr = `<a:rPr lang="it-IT" sz="1100" b="0" dirty="0"><a:solidFill><a:srgbClr val="4D6D67"/></a:solidFill><a:latin typeface="Calibri"/><a:ea typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-      const csrdShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="997" name="csrd_sentence"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5880000"/><a:ext cx="11353800" cy="400000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r>${csrdRPr}<a:t>${escapeXml(csrdSentence)}</a:t></a:r></a:p></p:txBody></p:sp>`;
+      const csrdLinkRPr = `<a:rPr lang="it-IT" sz="1100" b="1" dirty="0"><a:solidFill><a:srgbClr val="C05000"/></a:solidFill><a:latin typeface="Calibri"/><a:ea typeface="Calibri"/><a:cs typeface="Calibri"/><a:hlinkClick r:id="${csrdHlinkRid}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></a:rPr>`;
+      const csrdShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="997" name="csrd_sentence"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5880000"/><a:ext cx="11353800" cy="400000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r>${csrdRPr}<a:t>${escapeXml(csrdSentence)}   </a:t></a:r><a:r>${csrdLinkRPr}<a:t>${escapeXml(csrdLinkLabel)} ↗</a:t></a:r></a:p></p:txBody></p:sp>`;
       xmlStr = xmlStr.replace("</p:spTree>", csrdShapeXml + "</p:spTree>");
     }
 

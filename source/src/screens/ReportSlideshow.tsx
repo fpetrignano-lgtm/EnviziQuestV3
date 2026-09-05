@@ -146,8 +146,10 @@ function SlideCompany({ d }: { d: ReportData }) {
             {/* CSRD */}
             <div style={{background:"#fff8ee",border:"1px solid #f5a623",borderRadius:10,padding:"10px 14px"}}>
               <div style={{fontSize:11,fontWeight:700,color:"#c05000",letterSpacing:".08em",textTransform:"uppercase",marginBottom:4}}>CSRD</div>
-              <div style={{fontSize:15,fontWeight:600,color:"#0a2a1a"}}>{d.csrdLabel}</div>
-              <div style={{fontSize:13,color:"#557"}}>{d.csrdSub}</div>
+              <div style={{fontSize:15,fontWeight:600,color:"#0a2a1a"}}>{d.csrdLabel} <span style={{fontWeight:400,fontSize:13,color:"#557"}}>{d.csrdSub}</span></div>
+              <div style={{marginTop:4}}>
+                <span onClick={()=>window.open("https://www.consilium.europa.eu/en/press/press-releases/2026/02/24/council-signs-off-simplification-of-sustainability-reporting-and-due-diligence-requirements-to-boost-eu-competitiveness/","_blank")} style={{fontSize:13,color:"#c05000",textDecoration:"underline",fontWeight:600,cursor:"pointer"}}>{isIt?"Consiglio dell'UE ↗":"EU Council ↗"}</span>
+              </div>
               {d.csrdNote&&<div style={{fontSize:12,color:"#888",fontStyle:"italic",marginTop:4}}>{d.csrdNote}</div>}
             </div>
             {/* Maturità ESG */}
@@ -228,7 +230,10 @@ function Slide2({ d }: { d: ReportData }) {
             <p style={{margin:0}}>{isIt?`${d.companyName} è un ${d.sectorLabel.toLowerCase()} presente a livello ${d.marketLabel}.`:`${d.companyName} is a ${d.sectorLabel.toLowerCase()} operating at ${d.marketLabel} level.`}</p>
             <p style={{margin:0}}>{isIt?`Nell'ultimo esercizio ha registrato ${d.revenue} ${d.dimUnit}.`:`In the last financial year it reported ${d.revenue} ${d.dimUnit}.`}</p>
             <p style={{margin:0}}>{isIt?`L'organizzazione occupa ${d.employees.toLocaleString()} dipendenti.`:`The organisation employs ${d.employees.toLocaleString()} employees.`}</p>
-            <p style={{margin:0,color:d.csrdLabel.includes("non")||d.csrdLabel.includes("Not")?"#888":"#c05000"}}>{d.csrdLabel} — {d.csrdSub}</p>
+            <p style={{margin:0,color:d.csrdLabel.includes("non")||d.csrdLabel.includes("Not")?"#888":"#c05000"}}>{d.csrdLabel} {d.csrdSub}</p>
+            <p style={{margin:"2px 0 0",fontSize:14}}>
+              <span onClick={()=>window.open("https://www.consilium.europa.eu/en/press/press-releases/2026/02/24/council-signs-off-simplification-of-sustainability-reporting-and-due-diligence-requirements-to-boost-eu-competitiveness/","_blank")} style={{color:"#c05000",textDecoration:"underline",fontWeight:600,cursor:"pointer"}}>{isIt?"Consiglio dell'UE ↗":"EU Council ↗"}</span>
+            </p>
             {d.csrdNote&&<p style={{margin:0,fontStyle:"italic",color:"#557"}}>{d.csrdNote}</p>}
             <div style={{marginTop:16,fontSize:17,lineHeight:1.9}}>
               <p style={{margin:0}}><strong>{isIt?"Sedi totali":"Total locations"}:</strong> {totalSedi||"—"}</p>
@@ -544,11 +549,14 @@ export function ReportSlideshow({ language, setLanguage, setScreen, reset, data 
   const isIt = language === "it";
 
   return (
-    <main style={{background:"#000",display:"grid",gridTemplateRows:"auto 1fr auto",height:"100dvh",overflow:"hidden"}}>
+    <main style={{background:"#000",display:"grid",gridTemplateRows:"auto 1fr auto",height:"1080px",overflow:"hidden"}}>
       <header style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 20px",background:"rgba(0,0,0,.85)",zIndex:10}}>
         <button className="brand brandButton" onClick={reset} style={{color:"#fff"}}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
         <span style={{color:"#c9e8dc",fontSize:"13px",fontWeight:700}}>{idx+1} / {total}</span>
-        <button onClick={()=>setScreen("ilTuoReport")} style={{background:"transparent",border:"1px solid #39efb4",color:"#39efb4",borderRadius:"4px",padding:"4px 10px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>✕ {isIt?"Chiudi":"Close"}</button>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          {idx===1&&<button onClick={()=>window.open("https://www.consilium.europa.eu/en/press/press-releases/2026/02/24/council-signs-off-simplification-of-sustainability-reporting-and-due-diligence-requirements-to-boost-eu-competitiveness/","_blank")} style={{background:"transparent",border:"1px solid #f5a623",color:"#f5a623",borderRadius:"4px",padding:"4px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>{isIt?"Consiglio dell'UE ↗":"EU Council ↗"}</button>}
+          <button onClick={()=>setScreen("ilTuoReport")} style={{background:"transparent",border:"1px solid #39efb4",color:"#39efb4",borderRadius:"4px",padding:"4px 10px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>✕ {isIt?"Chiudi":"Close"}</button>
+        </div>
       </header>
 
       {/* slide area — scala la slide 1280×720 nel viewport */}

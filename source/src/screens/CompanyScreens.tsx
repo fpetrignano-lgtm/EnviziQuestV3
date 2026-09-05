@@ -236,7 +236,11 @@ export function CompanySetupScreen({
         <p className="eyebrow">{isIt?"RACCONTACI LA TUA AZIENDA":"TELL US ABOUT YOUR COMPANY"}</p>
         <h1 className="csTitle">{isIt?"La tua azienda":"Your company"}</h1>
         <div className="csFormOneCol">
-        <div className="csField csFieldName"><label>{isIt?"Nome Azienda":"Company Name"}<span className="csNameHint">{isIt?"· inserisci il nome della tua azienda":"· enter your company name"}</span></label><input className="csInput csInputName" placeholder={isIt?"Es. Acme S.p.A.":"E.g. Acme Ltd"} value={companyName||questName} onChange={e=>setCompanyName(e.target.value)}/></div>
+        <div className="csField csFieldName">
+          <label>{isIt?"Nome Azienda":"Company Name"}<span className="csNameHint">{isIt?"· inserisci il nome della tua azienda":"· enter your company name"}</span></label>
+          <input className="csInput csInputName" placeholder={isIt?"Es. Acme S.p.A.":"E.g. Acme Ltd"} value={companyName} onChange={e=>setCompanyName(e.target.value)}/>
+          {questName&&<p style={{margin:"4px 0 0",fontSize:"12px",color:"#6a9a88",lineHeight:1.4}}>{isIt?"Sessione:":"Session:"} <span style={{color:"#9abfb0"}}>{questName}</span></p>}
+        </div>
           <div className="csField">
             <label>{isIt?"Logo azienda (opzionale)":"Company logo (optional)"}</label>
             <div style={{display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
