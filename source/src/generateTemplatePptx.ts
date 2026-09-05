@@ -315,6 +315,16 @@ function processSlide4Frameworks(
     nabers:{ checkId: 32, labelId: 33 },
   };
 
+  // Framework extra (non hanno slot nel template) — label display
+  const FW_EXTRA_LABELS: Record<string, string> = {
+    tcfd:       "TCFD",
+    cdp:        "CDP",
+    gresb:      "GRESB",
+    energystar: "ENERGY STAR",
+    ifrs_s1:    "IFRS S1",
+    ifrs_s2:    "IFRS S2",
+  };
+
   // Helper: replace all <a:t> text content inside a shape by id
   const setShapeText = (xml: string, shapeId: number, text: string): string =>
     xml.replace(
@@ -335,6 +345,27 @@ function processSlide4Frameworks(
       xml = setShapeText(xml, checkId, "");
       xml = setShapeText(xml, labelId, "");
     }
+  }
+
+  // Extra frameworks (TCFD, CDP, GRESB, ENERGY STAR, IFRS S1, IFRS S2):
+  // collect those selected (inUso or diInteresse) and append them to the
+  // "Implicazione per il sistema dati" text block (shape id=40), which is
+  // already shown when inUsoCount >= 2. When no extra fw are selected the
+  // block keeps its original template text.
+  const extraInUso     = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.inUso).map(([,l]) => l);
+  const extraInteresse = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.diInteresse && !frameworkChecks[k]?.inUso).map(([,l]) => l);
+  if ((extraInUso.length > 0 || extraInteresse.length > 0) && inUsoCount >= 2) {
+    const parts: string[] = [];
+    if (extraInUso.length > 0)     parts.push(`In uso: ${extraInUso.join(", ")}`);
+    if (extraInteresse.length > 0) parts.push(`Di interesse: ${extraInteresse.join(", ")}`);
+    xml = setShapeText(xml, 40, `Altri framework selezionati — ${parts.join(" · ")}`);
+  } else if (extraInUso.length > 0 || extraInteresse.length > 0) {
+    // inUsoCount < 2 but extra fw selected — block was removed; inject a new small shape
+    const parts: string[] = [];
+    if (extraInUso.length > 0)     parts.push(`In uso: ${extraInUso.join(", ")}`);
+    if (extraInteresse.length > 0) parts.push(`Di interesse: ${extraInteresse.join(", ")}`);
+    const extraShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="998" name="fw_extra"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5700000"/><a:ext cx="11353800" cy="380000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="l"/><a:r><a:rPr lang="it-IT" sz="1100" b="0" dirty="0"><a:solidFill><a:srgbClr val="7ecfb8"/></a:solidFill></a:rPr><a:t>${escapeXml(`Altri framework selezionati — ${parts.join(" · ")}`)}</a:t></a:r></a:p></p:txBody></p:sp>`;
+    xml = xml.replace("</p:spTree>", `${extraShapeXml}</p:spTree>`);
   }
 
   return xml;
