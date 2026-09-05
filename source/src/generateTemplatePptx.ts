@@ -1272,6 +1272,19 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     if (i === 2) {
       xmlStr = fixSlide2ReadinessFont(xmlStr);
 
+      // Abbassa di ~150 000 EMU i due blocchi "Readiness dati" e "Posizionamento di reporting"
+      // Shape IDs: 22 (titolo readiness), 23 (valore BASSA), 24 (desc readiness),
+      //            26 (titolo posizionamento), 27 (valore percorso), 28 (desc percorso)
+      const NUDGE = 150000;
+      const nudgeShapeY = (xml: string, shapeId: number, delta: number): string =>
+        xml.replace(
+          new RegExp(`(<p:sp>(?:(?!<p:sp>)[\\s\\S])*?<p:cNvPr[^>]*\\bid="${shapeId}"[^>]*>[\\s\\S]*?<a:off x="(\\d+)" y=")(\\d+)(")`),
+          (_m, pre, _x, y, post) => `${pre}${parseInt(y) + delta}${post}`
+        );
+      for (const sid of [22, 23, 24, 26, 27, 28]) {
+        xmlStr = nudgeShapeY(xmlStr, sid, NUDGE);
+      }
+
       // Add hyperlink relationship for Consiglio dell'UE
       const csrdHlinkRid = "rId998";
       const csrdHlinkUrl = "https://www.consilium.europa.eu/en/press/press-releases/2026/02/24/council-signs-off-simplification-of-sustainability-reporting-and-due-diligence-requirements-to-boost-eu-competitiveness/";
