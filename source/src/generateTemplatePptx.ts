@@ -1327,7 +1327,7 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
       // x/cx match colonna destra (stessa di id=26/27/28)
       // y = subito sotto titolo (3276600), dimensione compatta per stare nel gap prima di id=27 (3457575)
       const srRPrSm = `<a:rPr lang="it-IT" sz="1350" b="0" i="1" dirty="0"><a:solidFill><a:srgbClr val="4D6D67"/></a:solidFill><a:latin typeface="Calibri"/><a:ea typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-      const srShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="996" name="sr_since"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="6191250" y="3276600"/><a:ext cx="4762500" cy="190000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="l"/><a:r>${srRPrSm}<a:t>${escapeXml(srText)}</a:t></a:r></a:p></p:txBody></p:sp>`;
+      const srShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="996" name="sr_since"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="6191250" y="3348600"/><a:ext cx="4762500" cy="190000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="l"/><a:r>${srRPrSm}<a:t>${escapeXml(srText)}</a:t></a:r></a:p></p:txBody></p:sp>`;
       xmlStr = xmlStr.replace("</p:spTree>", srShapeXml + "</p:spTree>");
     }
 
