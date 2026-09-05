@@ -459,7 +459,7 @@ export function CompanyScreen({
       {id:"tcfd",  label:"TCFD",                         area:isIt?"Globale":"Global"},
       {id:"cdp",   label:"CDP",                          area:isIt?"Globale":"Global"},
     ]},
-    {cat:{it:"ESG Reporting",en:"ESG Reporting"},rows:[
+    {cat:{it:"Standard internazionali e framework volontari o adottati dalle giurisdizioni",en:"International standards and voluntary or jurisdiction-adopted frameworks"},rows:[
       {id:"gri",     label:"GRI Standards",                   area:isIt?"Globale":"Global"},
       {id:"sasb",    label:"SASB Standards",                   area:isIt?"Globale":"Global"},
       {id:"sdg",     label:"UN Sustainable Development Goals", area:isIt?"Globale":"Global"},
