@@ -460,7 +460,7 @@ export function CompanyScreen({
   type FwCov = {level:"alto"|"medio"|"limitato"; it:string; en:string};
   const FW_ENVIZI_COV: Record<string,FwCov> = {
     ghg:        {level:"alto",    it:"Calcolo Scope 1, 2 e principali categorie Scope 3 con fattori gestiti centralmente.",                         en:"Scope 1, 2 and key Scope 3 categories with centrally managed emission factors."},
-    tcfd:       {level:"medio",   it:"Supporta la raccolta di dati climatici e la disclosure; la governance del framework rimane in capo all'azienda.", en:"Supports climate data collection and disclosure; framework governance remains with the organisation."},
+    tcfd:       {level:"medio",   it:"Supporta la raccolta di dati climatici e la disclosure. Framework ampiamente adottato in passato; le sue raccomandazioni sono oggi incorporate in IFRS S1 e S2.", en:"Supports climate data collection and disclosure. Widely adopted in the past; its recommendations are now incorporated into IFRS S1 and S2."},
     cdp:        {level:"medio",   it:"Facilita la preparazione dei dati richiesti dal questionario CDP; la compilazione e l'invio restano manuali.",    en:"Helps prepare data for the CDP questionnaire; submission remains a manual step."},
     gri:        {level:"alto",    it:"Raccolta e aggregazione dei principali indicatori GRI con tracciabilità dalla fonte.",                            en:"Collection and aggregation of key GRI indicators with source traceability."},
     sasb:       {level:"medio",   it:"Supporta la raccolta degli indicatori settoriali SASB; la mappatura ai topic standard è a carico dell'utente.",   en:"Supports collection of SASB sector indicators; mapping to standard topics is the user's responsibility."},
@@ -483,11 +483,11 @@ export function CompanyScreen({
     {num:4,label:{it:"CSRD obbligatoria",en:"Mandatory CSRD"},desc:{it:"Rendicontazione conforme alla normativa, inclusa nella relazione sulla gestione, redatta secondo gli ESRS applicabili e sottoposta a limited assurance.",en:"Regulatory-compliant reporting, included in the management report, prepared under applicable ESRS and subject to limited assurance."},for:{it:"L'organizzazione supera le soglie previste dalla normativa ed è pertanto soggetta agli obblighi della CSRD.",en:"The company or group exceeds the regulatory thresholds and is therefore subject to CSRD obligations."}},
     {num:5,label:{it:"Rendicontazione libera",en:"Free-form reporting"},desc:{it:"Rendicontazione volontaria definita autonomamente dall'azienda, senza adottare integralmente VSME, ESRS o CSRD. Contenuti, indicatori, periodicità e formato sono scelti in funzione degli obiettivi aziendali.",en:"Voluntary reporting defined autonomously by the company, without fully adopting VSME, ESRS or CSRD. Contents, indicators, frequency and format are chosen based on company objectives."},for:{it:"L'azienda intende comunicare liberamente le proprie iniziative e prestazioni di sostenibilità.",en:"The company does not fall within the previous options and intends to freely communicate its sustainability initiatives and performance."}},
   ];
-  type FwRow = {id:string;label:string;area:string};
+  type FwRow = {id:string;label:string;area:string;legacy?:boolean};
   const fwGroups:{cat:{it:string;en:string};rows:FwRow[]}[]=[
     {cat:{it:"GHG & Clima",en:"GHG & Climate"},rows:[
       {id:"ghg",   label:"GHG Protocol – Scope 1, 2, 3",area:isIt?"Globale":"Global"},
-      {id:"tcfd",  label:"TCFD",                         area:isIt?"Globale":"Global"},
+      {id:"tcfd",  label:"TCFD",                         area:isIt?"Globale":"Global", legacy:true},
       {id:"cdp",   label:"CDP",                          area:isIt?"Globale":"Global"},
     ]},
     {cat:{it:"Standard internazionali e framework volontari o adottati dalle giurisdizioni",en:"International standards and voluntary or jurisdiction-adopted frameworks"},rows:[
@@ -797,7 +797,7 @@ export function CompanyScreen({
                 <tr style={{background:"transparent"}}>
                   <td colSpan={5} style={{padding:"10px 0 4px",fontSize:"11px",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"#39efb4",borderTop:"1px solid rgba(57,239,180,.12)",background:"transparent"}}>{isIt?group.cat.it:group.cat.en}</td>
                 </tr>
-                {group.rows.map(({id,label,area})=>{
+                {group.rows.map(({id,label,area,legacy})=>{
                   const cov = FW_ENVIZI_COV[id];
                   const lvlColor = cov?.level==="alto"?"#39efb4":cov?.level==="medio"?"#fbbf24":"#9ca3af";
                   const lvlLabel = cov ? (isIt
@@ -806,7 +806,10 @@ export function CompanyScreen({
                   ) : "—";
                   return (
                   <tr key={id} className="fwRow">
-                    <td className="fwTdLabel">{label}</td>
+                    <td className="fwTdLabel">
+                      {label}
+                      {legacy&&<span style={{marginLeft:"7px",padding:"1px 6px",borderRadius:"3px",border:"1px solid #6b7280",color:"#9ca3af",fontSize:"clamp(9px,.78vw,11px)",fontFamily:"var(--font-geist-mono,monospace)",fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",verticalAlign:"middle"}}>legacy</span>}
+                    </td>
                     <td className="fwTdArea">{area}</td>
                     <td className="fwTdEnvizi">
                       {cov&&<span className="fwEnviziLevel" style={{color:lvlColor,borderColor:lvlColor}}>{lvlLabel}</span>}
