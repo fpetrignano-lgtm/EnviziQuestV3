@@ -1284,6 +1284,11 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
       for (const sid of [22, 23, 24, 26, 27, 28]) {
         xmlStr = nudgeShapeY(xmlStr, sid, NUDGE);
       }
+      // +2 mm extra solo per il blocco Readiness (22=titolo, 23=valore BASSA, 24=desc)
+      const NUDGE_READINESS = 72000; // 2 mm in EMU
+      for (const sid of [22, 23, 24]) {
+        xmlStr = nudgeShapeY(xmlStr, sid, NUDGE_READINESS);
+      }
 
       // Add hyperlink relationship for Consiglio dell'UE
       const csrdHlinkRid = "rId998";
