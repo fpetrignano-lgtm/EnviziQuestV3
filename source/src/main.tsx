@@ -4,9 +4,9 @@ import App from "./App";
 import "./styles.css";
 
 // Scale the 1080px layout to fill the browser viewport.
-// Uses window.innerHeight so it tracks the actual visible area (excludes browser chrome).
+// Uses screen.height (physical monitor height) — constant, unaffected by browser Cmd+/- zoom.
 function applyScale() {
-  const scale = window.innerHeight / 1080;
+  const scale = screen.height / 1080;
   const root = document.getElementById("root") as HTMLElement;
   root.style.transform = `scale(${scale})`;
   root.style.transformOrigin = "top left";
@@ -15,7 +15,6 @@ function applyScale() {
   root.style.overflow = "hidden";
 }
 applyScale();
-window.addEventListener("resize", applyScale);
 
 // Copy on click — missionProgress badge (navbar)
 document.addEventListener("click", (e) => {
