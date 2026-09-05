@@ -44,7 +44,7 @@ export const copy = {
       {icon:"📋",label:"Reporting e disclosure",detail:"Framework di rendicontazione, conformità normativa e comunicazione agli stakeholder."},
       {icon:"🎯",label:"Pianificazione e target",detail:"Scenari di decarbonizzazione, obiettivi Net Zero e monitoraggio dell'esecuzione nel tempo."}
     ],
-    approachDataTitle:"2. Il secondo passo è agire sulle sfide di dati.",
+    approachDataTitle:"2. Dagli obiettivi alle priorità dei dati ESG",
     approachOptionsLabel:"Le opzioni che valuterai attraverso questo Quest", approachOptions:[
       {key:"asis",icon:"⏸",label:"Attendere con l'AS-IS",detail:"Nessun investimento immediato, ma i problemi restano e la pressione cresce: da banche, clienti, normativa."},
       {key:"simple",icon:"🔧",label:"Adottare una soluzione percepita come semplice",detail:"Un tool puntuale o un workflow digitale: abbassa la complessità percepita, ma spesso non scala e non integra."},
@@ -72,10 +72,8 @@ export const copy = {
     approachStepsExample:"Esempio · La nostra motivazione principale per l'ESG è facilitare l'accesso a migliori condizioni di credito. Inoltre riceviamo richieste crescenti di dati ESG dai nostri clienti business.",
     approachStepsCta:"Avanti →",
     approachDataBody:[
-      "A ogni obiettivo di business sono associate sette fra le principali problematiche riscontrate nella gestione dei dati ESG.",
-      "L'elenco non pretende di rappresentare tutte le possibili situazioni né di sostituire un'analisi specifica della tua azienda. Offre però una base strutturata per riconoscere le criticità più vicine alla tua realtà e avviare un confronto significativo.",
-      "Potrai selezionare tutte le esigenze che ritieni pertinenti e valutarle secondo due dimensioni: la loro rilevanza per il raggiungimento degli obiettivi; il livello di criticità che presentano oggi.",
-      "La matrice rilevanza–criticità evidenzierà le esigenze prioritarie sulle quali concentrare l'attenzione.",
+      "Per ogni obiettivo di business individuerai le principali esigenze nella gestione dei dati ESG. L'elenco non è esaustivo, ma offre una base strutturata per riconoscere le criticità più vicine alla tua realtà.",
+      "Seleziona le esigenze pertinenti e valutale in base a rilevanza e criticità attuale. La matrice evidenzierà quelle prioritarie su cui concentrare l'attenzione.",
     ],
     approachDataExample:"Esempio · Con l'obiettivo di accesso al credito affrontiamo diverse esigenze in termini di dati ESG. In particolare sono molto rilevanti e molto problematiche queste esigenze: KPI ESG strutturati per il dialogo con banche e investitori · Tracciabilità completa dalla fonte al dato comunicato alla banca · Dati e piano ESG utilizzabili nei processi di rating e confronto con i peer.",
     approachDataCta:"Avanti →",
@@ -328,7 +326,7 @@ export const copy = {
       {icon:"📋",label:"Reporting and disclosure",detail:"Reporting frameworks, regulatory compliance and stakeholder communication."},
       {icon:"🎯",label:"Planning and targets",detail:"Decarbonisation scenarios, Net Zero objectives and execution monitoring over time."}
     ],
-    approachDataTitle:"2. The second step is acting on data challenges.",
+    approachDataTitle:"2. From objectives to ESG data priorities",
     approachOptionsLabel:"The options you will evaluate through this Quest", approachOptions:[
       {key:"asis",icon:"⏸",label:"Wait with the AS-IS",detail:"No immediate investment, but problems persist and pressure grows: from banks, clients, regulation."},
       {key:"simple",icon:"🔧",label:"A solution perceived as simple",detail:"A point tool or digital workflow: lowers perceived complexity, but often does not scale or integrate."},
@@ -356,10 +354,8 @@ export const copy = {
     approachStepsExample:"Example · Our main motivation for ESG is to facilitate access to better credit conditions. We also receive growing requests for ESG data from our business clients.",
     approachStepsCta:"Next →",
     approachDataBody:[
-      "Each business objective is linked to seven of the most common needs found in ESG data management.",
-      "The list does not claim to cover every possible situation or replace a specific analysis of your organisation. It does, however, offer a structured basis for recognising the needs closest to your reality and starting a meaningful conversation.",
-      "You will be able to select all the needs you consider relevant and assess them along two dimensions: their relevance to achieving the objectives; the level of criticality they present today.",
-      "The relevance–criticality matrix will highlight the priority needs to focus on.",
+      "For each business objective you will identify the main ESG data management needs. The list is not exhaustive, but it provides a structured basis for recognising the challenges closest to your reality.",
+      "Select the relevant needs and assess them based on relevance and current criticality. The matrix will highlight the priority ones to focus on.",
     ],
     approachDataExample:"Example · With the credit access objective in mind, we face several ESG data management needs. Particularly relevant and critical: structured ESG KPIs for dialogue with banks and investors · Full traceability from source to data communicated to the bank · ESG data and plan usable in rating processes and peer comparison.",
     approachDataCta:"Next →",
