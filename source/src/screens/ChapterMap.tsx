@@ -26,11 +26,9 @@ const FIXED_BOTTOM: { num: string; labelIt: string; labelEn: string; subIt: stri
 interface Props extends CommonProps {
   name: string;
   missionOrder: number[];
-  missionOutcomes: Record<number, string>;
-  trustScore: number;
 }
 
-export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder, missionOutcomes, trustScore }: Props) {
+export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder }: Props) {
   const isIt = language === "it";
   const [zoomWarnOpen,setZoomWarnOpen]=useState(false);
   useEffect(()=>{
@@ -95,43 +93,25 @@ export function ChapterMap({ language, profile, setLanguage, setScreen, reset, r
             </p>
           </div>
 
-          {/* contatore missioni completate */}
-          {(() => {
-            const completed = Object.keys(missionOutcomes).length;
-            return completed > 0 ? (
-              <div style={{ flexShrink: 0, fontSize: "13px", fontFamily: "var(--font-geist-mono,monospace)", letterSpacing: ".12em", color: "#39efb4", padding: "4px 0 2px" }}>
-                {isIt ? `${completed}/6 missioni completate · Fiducia: ${trustScore}/100` : `${completed}/6 missions completed · Trust: ${trustScore}/100`}
-              </div>
-            ) : null;
-          })()}
-
           {/* griglia sezioni — 5 righe × 2 colonne, occupa tutto lo spazio */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "repeat(5, 1fr)", gap: "5px", flex: 1, minHeight: 0 }}>
-            {allSections.map((s) => {
-              // Determina stato missione per le sfide M1-M6
-              const mPos = missionSections.findIndex(m => m.screen === s.screen);
-              const mIdx = mPos >= 0 ? missionOrder[mPos] : -1;
-              const outcome = mIdx >= 0 ? missionOutcomes[mIdx] : undefined;
-              const statusColor = outcome === "positive" ? "#39efb4" : outcome ? "#f5c542" : "rgba(255,255,255,.1)";
-              const statusLabel = outcome === "positive" ? (isIt ? "Completata ✓" : "Completed ✓") : outcome ? (isIt ? "In corso" : "In progress") : (isIt ? "Non iniziata" : "Not started");
-              return (
-                <button
-                  key={s.screen}
-                  onClick={() => setScreen(s.screen)}
-                  style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--surface,#1a1a2e)", border: `1px solid ${mIdx >= 0 ? statusColor : "rgba(255,255,255,.1)"}`, borderRadius: "10px", padding: "6px 12px", cursor: "pointer", textAlign: "left", transition: "border-color .15s", color: "inherit", overflow: "hidden", minWidth: 0 }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#39efb4")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = mIdx >= 0 ? statusColor : "rgba(255,255,255,.1)")}
-                >
-                  <span style={{ minWidth: "36px", height: "36px", borderRadius: "50%", border: `2px solid ${mIdx >= 0 ? statusColor : "#39efb4"}`, background: "transparent", color: mIdx >= 0 ? statusColor : "#39efb4", fontWeight: 800, fontSize: "clamp(12px,1.2vw,18px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {s.num}
-                  </span>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
-                    <span style={{ fontWeight: 700, fontSize: "clamp(24px,2.175vw,31.5px)", lineHeight: 1.55, color: "#b5c9c1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? s.labelIt : s.labelEn}</span>
-                    <span style={{ fontSize: "clamp(17.3px,1.566vw,22.7px)", color: mIdx >= 0 ? statusColor : "#b5c9c1", lineHeight: 1.55, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{mIdx >= 0 ? statusLabel : (isIt ? s.subIt : s.subEn)}</span>
-                  </div>
-                </button>
-              );
-            })}
+            {allSections.map((s) => (
+              <button
+                key={s.screen}
+                onClick={() => setScreen(s.screen)}
+                style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--surface,#1a1a2e)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "10px", padding: "6px 12px", cursor: "pointer", textAlign: "left", transition: "border-color .15s", color: "inherit", overflow: "hidden", minWidth: 0 }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = "#39efb4")}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.1)")}
+              >
+                <span style={{ minWidth: "36px", height: "36px", borderRadius: "50%", border: "2px solid #39efb4", background: "transparent", color: "#39efb4", fontWeight: 800, fontSize: "clamp(12px,1.2vw,18px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  {s.num}
+                </span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
+                  <span style={{ fontWeight: 700, fontSize: "clamp(24px,2.175vw,31.5px)", lineHeight: 1.55, color: "#b5c9c1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? s.labelIt : s.labelEn}</span>
+                  <span style={{ fontSize: "clamp(17.3px,1.566vw,22.7px)", color: "#b5c9c1", lineHeight: 1.55, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? s.subIt : s.subEn}</span>
+                </div>
+              </button>
+            ))}
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", gap: "10px", paddingBottom: "4px", flexShrink: 0 }}>

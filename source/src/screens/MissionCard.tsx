@@ -70,7 +70,6 @@ export function MissionCardScreen({
     </table>
   );
 
-  const hasNeeds = needs.length > 0;
   return(
     <main className="missionMenuScreen">
       <header className="missionNav missionNavTrust" style={{position:"fixed",top:0,left:0,right:0}}>
@@ -85,20 +84,11 @@ export function MissionCardScreen({
             <div className="missionCardTop"><span>{String(cardNum).padStart(2,"0")}</span><i>{m.icon}</i></div>
             <h2>{isIt?m.it:m.en}</h2>
           </div>
-          <div className="missionCardNeedsBox">
-            {hasNeeds
-              ? renderNeedsTable(needs)
-              : <div style={{padding:"24px 16px",textAlign:"center"}}>
-                  <p style={{margin:"0 0 8px",fontSize:"18px",color:"#7dcfad",fontStyle:"italic"}}>{isIt?"Nessuna esigenza prioritaria selezionata per questa missione.":"No priority need selected for this mission."}</p>
-                  <p style={{margin:0,fontSize:"14px",color:"#5a8a78"}}>{isIt?"Puoi comunque svolgere la missione oppure saltarla.":"You can still run the mission or skip it."}</p>
-                </div>
-            }
-          </div>
+          <div className="missionCardNeedsBox">{needs.length>0?renderNeedsTable(needs):<span className="missionCardNeed">—</span>}</div>
         </article>
       </section>
       <div style={{position:"fixed",bottom:"32px",left:0,right:0,display:"flex",justifyContent:"center",gap:"12px"}}>
         <button className="secondaryAction" onClick={()=>setScreen(backScreen)}>← {isIt?"Indietro":"Back"}</button>
-        {!hasNeeds&&<button className="secondaryAction" style={{color:"#f5a623",borderColor:"#f5a623"}} onClick={()=>setScreen("challengeSeparator2")}>{isIt?"Salta missione →":"Skip mission →"}</button>}
         <button className="actionButton" style={{width:"auto",marginTop:0,padding:"12px 24px"}} onClick={()=>{setSelectedMission(missionIndex);localStorage.setItem("envizi-quest-mission",String(missionIndex+1));setScreen("briefing");}}>{isIt?"Avanti →":"Next →"}</button>
       </div>
     </main>

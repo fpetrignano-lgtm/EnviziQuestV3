@@ -79,14 +79,9 @@ export function IlTuoReport({language,profile,setLanguage,setScreen,reset,render
       <div style={{position:"absolute",top:0,left:0,right:0,height:"4px",background:"#3b82f4",zIndex:100}}/>
       <header className="missionNav">
         <button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
-        <div className="missionProgress"><span className="activeDot"/> {isIt?"SINTESI INTERMEDIA":"INTERIM SUMMARY"}</div>
         <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
       </header>
-      <section style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"8px",padding:"12px 24px 16px",width:"100%",flex:1,minHeight:0}}>
-        <div style={{width:"100%",maxWidth:"960px",display:"flex",flexDirection:"column",gap:"4px"}}>
-          <h1 style={{margin:0,fontSize:"clamp(20px,2.2vw,28px)",fontWeight:800,color:"#f2fff9",letterSpacing:"-.01em"}}>{isIt?"Sintesi intermedia delle priorità":"Interim summary of priorities"}</h1>
-          <p style={{margin:0,fontSize:"clamp(12px,1.1vw,14px)",color:"#7dcfad",lineHeight:1.5}}>{isIt?"Questo documento riassume gli obiettivi di business ESG selezionati, le esigenze di gestione dati prioritarie e la roadmap iniziale delle sfide. Verrà aggiornato al termine di ogni missione.":"This document summarises the selected ESG business objectives, priority data management needs and the initial challenge roadmap. It will be updated at the end of each mission."}</p>
-        </div>
+      <section style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"12px",padding:"12px 0 20px",width:"100%",flex:1,minHeight:0}}>
         <div style={{position:"relative",width:"100%",maxWidth:"none",flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <img src="./logica-report-finale.png" alt={isIt?"Anteprima report":"Report preview"} style={{width:"100%",height:"100%",objectFit:"contain",borderRadius:"10px",boxShadow:"0 4px 32px rgba(0,0,0,.5)",display:"block"}}/>
         </div>

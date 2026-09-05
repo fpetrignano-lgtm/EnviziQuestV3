@@ -32,10 +32,7 @@ export function ApproachDataCopyScreen({ language, setLanguage, setScreen, reset
       <div className="approachIntroLeft">
         <h1 className="approachIntroTitle">{t.approachDataTitle}</h1>
         <div className="approachIntroText">{(t.approachDataBody as string[]).map((para,i)=><p key={i}>{para}</p>)}</div>
-        <div style={{display:"flex",gap:"10px",flexWrap:"wrap",alignItems:"center",marginTop:"8px"}}>
-          <button className="actionButton approachIntroCta" onClick={()=>setScreen("priorityData")}>{t.approachDataCta}<b>→</b></button>
-          <button className="secondaryAction" style={{marginTop:0}} onClick={()=>setScreen("priorityData")}>{isIt?"Come funziona la valutazione →":"How the assessment works →"}</button>
-        </div>
+        <button className="actionButton approachIntroCta" onClick={()=>setScreen("priorityData")}>{t.approachDataCta}<b>→</b></button>
       </div>
       <div className="approachIntroRight">
         <img src="./step-2.svg" className="approachIntroStepBadge" alt="Step 2"/>
@@ -68,7 +65,6 @@ interface PrioritiesProps extends CommonProps {
   name: string;
   onSave?: (name: string) => void;
   defaultSaveName?: string;
-  approachDataShown?: boolean;
 }
 
 export function PrioritiesScreen({
@@ -76,7 +72,7 @@ export function PrioritiesScreen({
   priorities, priorityIncluded, togglePriorityIncluded, rankPriority,
   prioExperience, setPrioExpModal, prioExpModal, prioExpMode, setPrioExpMode,
   prioExpSelected, setPrioExpSelected, setPrioExperience, prioDefaultExp,
-  displayCompanyName, t, name, onSave, defaultSaveName, approachDataShown,
+  displayCompanyName, t, name, onSave, defaultSaveName,
 }: PrioritiesProps) {
   const isIt = language === "it";
   const prioImg: Record<Priority, string> = {credit:"./obj-credit.png",compliance:"./obj-compliance.png",customers:"./obj-customers.png",efficiency:"./obj-efficiency.png",supply:"./obj-supply.png",reputation:"./obj-reputation.png"};
@@ -105,9 +101,8 @@ export function PrioritiesScreen({
     <div className="prioCardsLayout">
       <div className="prioCardsIntro">
         <p className="eyebrow">{t.priorityKicker}</p>
-        <h1>{isIt?"Definisci le priorità":"Define your priorities"}</h1>
+        <h1>{t.priorityTitle}</h1>
         <p>{(t.priorityIntro as string).replace("COMPANY_NAME",displayCompanyName)}</p>
-        {(()=>{const includedCount=priorities.filter(p=>priorityIncluded[p]).length;return includedCount>3?<p style={{margin:"8px 0 0",fontSize:"13px",color:"#f5a623",fontStyle:"italic"}}>{isIt?`Hai selezionato ${includedCount} obiettivi. Ti suggeriamo di scegliere al massimo 3 per un'analisi focalizzata.`:`You selected ${includedCount} objectives. We suggest choosing at most 3 for a focused analysis.`}</p>:includedCount===0?<p style={{margin:"8px 0 0",fontSize:"13px",color:"#7dcfad",fontStyle:"italic"}}>{isIt?"Seleziona almeno un obiettivo per continuare.":"Select at least one objective to continue."}</p>:null;})()}
         <div className="priorityPersona">
           <img src={`./characters/${profile}-neutral.png`} alt={name}/>
           <div><strong>{name}</strong><small>ESG MANAGER</small></div>
@@ -138,7 +133,7 @@ export function PrioritiesScreen({
             </div>
           ))}
         </div>
-        <button className="actionButton prioCardsConfirmBtn" disabled={priorities.filter(p=>priorityIncluded[p]).length===0} onClick={()=>{localStorage.setItem("envizi-quest-priorities",JSON.stringify(priorities));setScreen(approachDataShown?"priorityData":"approachDataCopy")}}>{isIt?"Avanti":"Next"}<b>→</b></button>
+        <button className="actionButton prioCardsConfirmBtn" onClick={()=>{localStorage.setItem("envizi-quest-priorities",JSON.stringify(priorities));setScreen("approachDataCopy")}}>{isIt?"Avanti":"Next"}<b>→</b></button>
       </div>
     </div>
     {prioExpModal&&(()=>{
@@ -199,6 +194,7 @@ export function PrioritiesScreen({
 
 interface PriorityDataProps extends CommonProps {
   priorities: Priority[];
+  priorityIncluded: Record<Priority, boolean>;
   dataNeeds: NeedItem[];
   needRelevance: Record<string, number>;
   setNeedRelevance: React.Dispatch<React.SetStateAction<Record<string, number>>>;
@@ -223,7 +219,7 @@ interface PriorityDataProps extends CommonProps {
 
 export function PriorityDataScreen({
   language, profile, setLanguage, setScreen, reset, renderTrustBar,
-  priorities, dataNeeds, needRelevance, setNeedRelevance, needCriticality, setNeedCriticality,
+  priorities, priorityIncluded, dataNeeds, needRelevance, setNeedRelevance, needCriticality, setNeedCriticality,
   needIncluded, toggleNeedIncluded, isNeedIncluded, pdHelpOpen, setPdHelpOpen,
   needIdToMission, needIdToCapability, displayCompanyName, t, name,
   pdCustomLabels: customLabels, setPdCustomLabels: setCustomLabels,
@@ -238,6 +234,7 @@ export function PriorityDataScreen({
   const totalSlides = priorities.length;
   const p = priorities[slideIdx];
   const colItems = dataNeeds.filter(n => n.priority === p);
+  const isPriorityDisabled = !(priorityIncluded[p] ?? true);
 
   // id sintetico per la riga custom di questa priority
   const customId = `custom-${p}`;
@@ -332,8 +329,7 @@ export function PriorityDataScreen({
     </header>
 
     {/* ── Top bar: titolo + navigazione ── */}
-    {(()=>{const totalIncluded=dataNeeds.filter(n=>n.priority!==undefined).reduce((s,n)=>{const srcId=n.id;return s+(isNeedIncluded(srcId)?1:0);},0);
-    return <div className="pdSlideTopBar">
+    <div className="pdSlideTopBar">
       <div className="pdSlideTopLeft">
         <p className="pdSlideTitleLabel">{isIt?"Dagli obiettivi alle esigenze di gestione dati ESG":"From objectives to ESG data management needs"}</p>
         <div className="pdSlideObjHeader">
@@ -342,7 +338,6 @@ export function PriorityDataScreen({
             <span className="pdSlideObjMeta">{isIt?"Obiettivo:":"Objective:"}</span>
             <span className="pdSlideObjName">{(t.priorityNames as Record<string,string>)[p]}</span>
           </div>
-          {totalIncluded>0&&<span style={{marginLeft:"16px",fontSize:"11px",color:"#39efb4",fontWeight:700,fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".08em",background:"rgba(57,239,180,.12)",borderRadius:"6px",padding:"2px 8px",flexShrink:0}}>{totalIncluded} {isIt?"esigenze incluse":"needs included"}</span>}
         </div>
       </div>
       <div className="pdSlideNavRow">
@@ -355,15 +350,49 @@ export function PriorityDataScreen({
         <div className="pdSlideNavBtns">
           <button className="pdSlideNavBtn" onClick={()=>{ if(slideIdx===0) goBack(); else setSlideIdx(i=>i-1); }}>←</button>
           <span className="pdSlideNavCount">{slideIdx+1} / {totalSlides}</span>
-          <button className="pdSlideNavBtn" onClick={()=>{ if(slideIdx===totalSlides-1){if(totalIncluded===0){alert(isIt?"Seleziona almeno un'esigenza per continuare.":"Select at least one need to proceed.");}else setScreen("priorityMatrix");}else setSlideIdx(i=>i+1); }}>→</button>
+          <button className="pdSlideNavBtn" onClick={()=>{ if(slideIdx===totalSlides-1) setScreen("priorityMatrix"); else setSlideIdx(i=>i+1); }}>→</button>
         </div>
       </div>
-    </div>;})()}
+    </div>
 
     {/* ── Corpo: lista items + colonna destra fissa ── */}
     <div className="pdSlideBody">
       {/* Lista esigenze */}
-      <div className="pdSlideList">
+      <div className="pdSlideList" style={isPriorityDisabled?{position:"relative"}:undefined}>
+        {/* ── Banner obiettivo deselezionato ── */}
+        {isPriorityDisabled && (
+          <div style={{position:"absolute",inset:0,zIndex:10,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:"rgba(7,18,15,0.72)",borderRadius:"10px",gap:"12px",padding:"32px 24px",textAlign:"center",pointerEvents:"auto"}}>
+            <span style={{fontSize:"clamp(28px,2.5vw,40px)",lineHeight:1}}>⊘</span>
+            <p style={{margin:0,fontSize:"clamp(14px,1.2vw,17px)",color:"#b5c9c1",fontWeight:600,lineHeight:1.4}}>
+              {isIt?"Obiettivo deselezionato":"Objective deselected"}
+            </p>
+            <div style={{display:"flex",gap:"10px",flexWrap:"wrap",justifyContent:"center",marginTop:"4px"}}>
+              <button
+                className="secondaryAction"
+                style={{fontSize:"clamp(12px,1vw,14px)",padding:"8px 20px"}}
+                onClick={()=>setScreen("priorities")}
+              >
+                {isIt?"← Business Priorities":"← Business Priorities"}
+              </button>
+              {slideIdx < totalSlides-1
+                ? <button
+                    className="actionButton"
+                    style={{fontSize:"clamp(12px,1vw,14px)",padding:"8px 20px"}}
+                    onClick={()=>setSlideIdx(i=>i+1)}
+                  >
+                    {isIt?"Prossimo obiettivo →":"Next objective →"}
+                  </button>
+                : <button
+                    className="actionButton"
+                    style={{fontSize:"clamp(12px,1vw,14px)",padding:"8px 20px"}}
+                    onClick={()=>setScreen("priorityMatrix")}
+                  >
+                    {isIt?"Vai alla matrice →":"Go to matrix →"}
+                  </button>
+              }
+            </div>
+          </div>
+        )}
         {/* Header colonne */}
         <div className="pdSlideColHeader">
           <div className="pdSlideColHLabel">{isIt?"Esigenza di gestione dati ESG":"ESG data management need"}</div>
@@ -671,7 +700,7 @@ export function PriorityDataScreen({
           <button className="secondaryAction" style={{fontSize:"clamp(12px,1vw,14px)",padding:"10px 12px",width:"100%"}} onClick={exportDataNeedsCsv}>↓ {isIt?"Esporta CSV":"Export CSV"}</button>
           {slideIdx < totalSlides-1
             ? <button className="actionButton" style={{width:"100%"}} onClick={()=>setSlideIdx(i=>i+1)}>{isIt?"Prossimo obiettivo →":"Next objective →"}</button>
-            : <button className="actionButton" style={{width:"100%"}} onClick={()=>setScreen("priorityMatrix")}>{isIt?"Vai alla matrice →":"Go to matrix →"}</button>
+            : <button className="actionButton" style={{width:"100%"}} onClick={()=>setScreen("priorityMatrix")}>{t.priorityDataCta}<b>→</b></button>
           }
         </div>
       </div>
@@ -818,18 +847,20 @@ export function PriorityMatrixScreen({
           <text x={10} y={MATRIX_H/2} textAnchor="middle" fontSize="12" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3" transform={`rotate(-90,10,${MATRIX_H/2})`}>{isIt?"CRITICITÀ":"CRITICALITY"}</text>
           <rect x={toX(5.5)} y={0} width={PAD_L+MATRIX_W-toX(5.5)} height={MATRIX_H/2} fill="rgba(57,239,180,.04)"/>
           {(()=>{
-            const FONT=7.5; const LINE_H=9; const MAX_LINES=4;
-              const CHAR_W=FONT*0.52; const PAD_X=6; const PAD_Y=4;
-              const maxChars=40; // no truncation — full label
-              const needMeta=allNeeds.map(n=>{
-                const words=n.label.split(" ");
-                const lines:string[]=[]; let cur="";
-                for(const w of words){const test=cur?cur+" "+w:w;if(test.length<=maxChars)cur=test;else{if(cur)lines.push(cur);cur=w;}}
-                if(cur)lines.push(cur);
-                const vis=lines.slice(0,MAX_LINES);
-                const bw=Math.max(...vis.map(l=>l.length))*CHAR_W+PAD_X*2;
-                const bh=vis.length*LINE_H+PAD_Y*2+8;
-                return {n,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit),rankLabel:""};
+            const FONT=7.5; const LINE_H=9; const MAX_LINES=3;
+            const CHAR_W=FONT*0.52; const PAD_X=6; const PAD_Y=4;
+            const maxChars=Math.floor((MATRIX_W/9-PAD_X*2)/CHAR_W);
+            const needMeta=allNeeds.map(n=>{
+              const words=n.label.split(" ");
+              const lines:string[]=[]; let cur="";
+              for(const w of words){const test=cur?cur+" "+w:w;if(test.length<=maxChars)cur=test;else{if(cur)lines.push(cur);cur=w;}}
+              if(cur)lines.push(cur);
+              const vis=lines.slice(0,MAX_LINES);
+              const bw=Math.max(...vis.map(l=>l.length))*CHAR_W+PAD_X*2;
+              const bh=vis.length*LINE_H+PAD_Y*2+8;
+              const prioIdx=priorities.indexOf(n.priority);
+              const posInGroup=dataNeeds.filter(d=>d.priority===n.priority).findIndex(d=>d.id===n.id);
+              return {n,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit),rankLabel:`${prioIdx+1}.${posInGroup+1}`};
             });
             for(let iter=0;iter<50;iter++){
               for(let i=0;i<needMeta.length;i++){
@@ -868,7 +899,7 @@ export function PriorityMatrixScreen({
         <div style={{display:"flex",justifyContent:"flex-end",padding:"8px 0 4px",width:"100%"}}>
           {pmFromBriefing
             ? <button className="actionButton" onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
-            : <button className="actionButton" disabled={allNeeds.length===0} onClick={()=>setScreen("ilTuoReport")}>{isIt?"Genera la sintesi e costruisci la roadmap":"Generate summary and build roadmap"}<b> →</b></button>
+            : <button className="actionButton" onClick={()=>setScreen("ilTuoReport")}>{isIt?"Inizia le sfide":"Start challenges"}<b> →</b></button>
           }
         </div>
         {pmSelected&&<div className="pmPopoverOverlay" onClick={()=>setPmSelected(null)}>
