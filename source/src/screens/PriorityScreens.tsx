@@ -894,7 +894,7 @@ export function PriorityMatrixScreen({
           })()}
         </svg>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px"}}>
-          <p style={{margin:0,fontSize:"clamp(11px,0.95vw,13px)",color:"#5a9e88",lineHeight:1.45,maxWidth:"560px"}}>
+          <p style={{margin:0,fontSize:"clamp(22px,1.9vw,26px)",color:"#5a9e88",lineHeight:1.45,maxWidth:"560px"}}>
             {isIt
               ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
               : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face."}
