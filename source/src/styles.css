@@ -1150,6 +1150,7 @@ body{font-size:18px}.eyebrow{font-size:22px}.brand{font-size:14px}.step,.mission
 .csSiteTable thead th{padding:4px 2px;font:700 14px var(--font-geist-mono);letter-spacing:.04em;text-transform:uppercase;color:#72c4a8;border-bottom:1px solid #1e3a2e;text-align:center}
 .csSiteThRow{text-align:left!important;width:22%}
 .csSiteThGeo{font-size:12px;letter-spacing:0}
+.csSiteThGeoEmpty{opacity:0.4}
 .csSiteTable tbody tr{border-bottom:1px solid #121f19}
 .csSiteRowLabel{font-size:22px;color:#9db3aa;padding:5px 4px 5px 0;white-space:nowrap;vertical-align:middle}
 .csSiteCell{padding:3px 2px;text-align:center;vertical-align:middle}

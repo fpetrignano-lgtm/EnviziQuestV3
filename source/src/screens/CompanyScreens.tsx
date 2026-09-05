@@ -234,7 +234,7 @@ export function CompanySetupScreen({
       <div className="csLeft"><img className="csProfileImg" src={`./characters/${profile}-neutral.png`} alt={name}/><div className="csProfileTag"><span className="statusDot"/><div><small>ESG MANAGER</small><strong>{name}</strong></div></div></div>
       <div className="csRight">
         <p className="eyebrow">{isIt?"RACCONTACI LA TUA AZIENDA":"TELL US ABOUT YOUR COMPANY"}</p>
-        <h1 className="csTitle">{isIt?"La tua azienda":"Your company"}</h1>
+        <h1 className="csTitle">{companyName||(isIt?"La tua azienda":"Your company")}</h1>
         <div className="csFormOneCol">
         <div className="csField csFieldName">
           <label>{isIt?"Nome Azienda":"Company Name"}<span className="csNameHint">{isIt?"· inserisci il nome della tua azienda":"· enter your company name"}</span></label>
@@ -276,28 +276,38 @@ export function CompanySetupScreen({
           <div className="csField">
             <div className="csSiteTotal">{isIt?"Totale sedi":"Total locations"}: <strong>{siteTotal===0?"—":siteTotal}</strong></div>
             <div className="csSiteTableWrap">
-              <table className="csSiteTable">
-                <thead>
-                  <tr>
-                    <th className="csSiteThRow">{isIt?"Tipo sede":"Site type"}</th>
-                    {geoColKeys.map(g=><th key={g} className="csSiteThGeo">{isIt?geoColLabels[g].it:geoColLabels[g].en}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {siteRowDefs.map(row=>(
-                    <tr key={row.key}>
-                      <td className="csSiteRowLabel">{isIt?row.label.it:row.label.en}</td>
-                      {geoColKeys.map(g=>(
-                        <td key={g} className="csSiteCell">
-                          <input className="csSiteInput" type="number" min={0}
-                            value={(siteTable[row.key][g]??0)===0?"":(siteTable[row.key][g]??0)}
-                            onChange={e=>updateSiteCell(row.key,g,parseInt(e.target.value))}/>
-                        </td>
+              {(()=>{
+                const hasData=(g:SiteGeoKey)=>siteRowDefs.some(row=>(siteTable[row.key][g]??0)>0);
+                const sortedCols=[...geoColKeys].sort((a,b)=>{
+                  const aD=hasData(a)?0:1;
+                  const bD=hasData(b)?0:1;
+                  return aD-bD || geoColKeys.indexOf(a)-geoColKeys.indexOf(b);
+                });
+                return (
+                  <table className="csSiteTable">
+                    <thead>
+                      <tr>
+                        <th className="csSiteThRow">{isIt?"Tipo sede":"Site type"}</th>
+                        {sortedCols.map(g=><th key={g} className={`csSiteThGeo${hasData(g)?"":" csSiteThGeoEmpty"}`}>{isIt?geoColLabels[g].it:geoColLabels[g].en}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {siteRowDefs.map(row=>(
+                        <tr key={row.key}>
+                          <td className="csSiteRowLabel">{isIt?row.label.it:row.label.en}</td>
+                          {sortedCols.map(g=>(
+                            <td key={g} className="csSiteCell">
+                              <input className="csSiteInput" type="number" min={0}
+                                value={(siteTable[row.key][g]??0)===0?"":(siteTable[row.key][g]??0)}
+                                onChange={e=>updateSiteCell(row.key,g,parseInt(e.target.value))}/>
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                );
+              })()}
             </div>
           </div>
           <div className="csFourCol">
