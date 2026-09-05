@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-labelledby="title desc">
+  <title id="title">Badge ESG Study</title>
+  <desc id="desc">Riconoscimento Envizi Quest per aver completato il percorso di studio ESG e compreso la metodologia.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0a0f1f"/>
+      <stop offset="1" stop-color="#151e45"/>
+    </linearGradient>
+    <radialGradient id="medal" cx="50%" cy="38%" r="65%">
+      <stop offset="0" stop-color="#c7d8ff"/>
+      <stop offset=".45" stop-color="#6b90f7"/>
+      <stop offset="1" stop-color="#2a4dcc"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="15" stdDeviation="16" flood-color="#020514" flood-opacity=".44"/>
+    </filter>
+  </defs>
+  <rect width="960" height="540" rx="34" fill="url(#bg)"/>
+  <path d="M0 425C175 345 283 496 456 428S735 327 960 410V540H0Z" fill="#0d1630" opacity=".72"/>
+  <path d="M50 63H255M705 63H910" stroke="#6b90f7" stroke-width="2" opacity=".55"/>
+  <text x="480" y="71" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-weight="700" letter-spacing="3.4" fill="#99b8ff">ENVIZI QUEST · BADGE SBLOCCATO</text>
+
+  <g filter="url(#shadow)" transform="translate(480 247)">
+    <path d="M-132-113 0-152 132-113V-8C132 97 64 151 0 177-64 151-132 97-132-8Z" fill="#080e2a" stroke="#6b90f7" stroke-width="7"/>
+    <path d="M-112-99 0-132 112-99V-11C112 80 54 128 0 151-54 128-112 80-112-11Z" fill="url(#medal)"/>
+    <circle r="65" fill="#eef2ff" opacity=".94"/>
+    <!-- Icona libro aperto -->
+    <path d="M-32-20 C-32-22 -34-24 -36-24 L-52-24 C-54-24 -56-22 -56-20 L-56 22 C-56 24 -54 26 -52 26 L-36 26 C-31 26 -28 29 -28 34 C-28 29 -25 26 -20 26 L4 26 C6 24 8 22 8 20 L8-20 C8-22 6-24 4-24 L-12-24 C-14-24 -16-22 -16-20 Z" fill="none" stroke="#2a4dcc" stroke-width="5" stroke-linejoin="round"/>
+    <line x1="-28" y1="-20" x2="-28" y2="26" stroke="#2a4dcc" stroke-width="4"/>
+    <line x1="-44" y1="-10" x2="-40" y2="-10" stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="-44" y1="0"  x2="-40" y2="0"  stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="-44" y1="10" x2="-40" y2="10" stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="-12" y1="-10" x2="-4"  y2="-10" stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="-12" y1="0"  x2="-4"  y2="0"  stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <line x1="-12" y1="10" x2="-4"  y2="10" stroke="#2a4dcc" stroke-width="3.5" stroke-linecap="round"/>
+    <circle r="14" fill="#080e2a"/>
+  </g>
+
+  <text x="480" y="407" text-anchor="middle" font-family="Georgia,serif" font-size="48" font-weight="700" fill="#eef2ff">ESG Study</text>
+  <text x="480" y="442" text-anchor="middle" font-family="Arial,sans-serif" font-size="17" fill="#99b8ff">Hai studiato il percorso e compreso la metodologia Envizi Quest.</text>
+  <g transform="translate(480 480)">
+    <rect x="-119" y="-18" width="238" height="36" rx="18" fill="#101a40" stroke="#6b90f7"/>
+    <text x="0" y="6" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" font-weight="700" letter-spacing="1.8" fill="#99b8ff">STUDY PATHWAY</text>
+  </g>
+</svg>

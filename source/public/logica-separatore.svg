@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="280" viewBox="0 0 1600 280" role="img" aria-labelledby="title desc">
+  <title id="title">Percorso Envizi Quest in sei tappe</title>
+  <desc id="desc">Indicatore di avanzamento con priorità e issue completate, sfide decisionali in corso, roadmap, fiducia e report finale da iniziare.</desc>
+  <defs>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071b15"/>
+      <stop offset="1" stop-color="#0a241c"/>
+    </linearGradient>
+    <linearGradient id="doneLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#28dca8"/>
+      <stop offset="1" stop-color="#69f0c7"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .eyebrow{font:600 13px Arial,sans-serif;letter-spacing:2.4px;fill:#68e6c1}
+      .label{font:700 17px Georgia,serif;fill:#effbf7}
+      .sub{font:500 12px Arial,sans-serif;letter-spacing:.7px;fill:#8eaaa0}
+      .done .sub{fill:#68e6c1}
+      .future .label{fill:#b7c9c2}
+      .icon{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+      .done{color:#071b15}
+      .active{color:#effbf7}
+      .future{color:#668279}
+      .pulse{transform-origin:center;animation:pulse 2.4s ease-in-out infinite}
+      @keyframes pulse{0%,100%{opacity:.28;transform:scale(.92)}50%{opacity:.72;transform:scale(1.12)}}
+      @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+    </style>
+  </defs>
+
+  <rect x="1" y="1" width="1598" height="278" rx="24" fill="url(#panel)" stroke="#1d483b"/>
+  <text class="eyebrow" x="62" y="44">IL TUO PERCORSO · 2 DI 6 COMPLETATE</text>
+
+  <path d="M124 119H1476" stroke="#21483c" stroke-width="6" stroke-linecap="round"/>
+  <path d="M124 119H664" stroke="url(#doneLine)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- 1 · Priorità di business · completed -->
+  <g class="done" data-state="completed" transform="translate(124 119)">
+    <circle r="31" fill="#42e3b2"/>
+    <path class="icon" d="M-13-7h8v8h-8zM5-12h8v8H5zM-4 8h8v8h-8zM-9 1l5 7M9-4L4 8"/>
+    <circle cx="22" cy="-22" r="10" fill="#effbf7" stroke="#42e3b2" stroke-width="2"/>
+    <path d="m18-22 3 3 6-7" fill="none" stroke="#08785c" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="done" text-anchor="middle">
+    <text class="label" x="124" y="181">Priorità di business</text>
+    <text class="sub" x="124" y="203">COMPLETATA</text>
+  </g>
+
+  <!-- 2 · Issue ESG · completed -->
+  <g class="done" data-state="completed" transform="translate(394 119)">
+    <circle r="31" fill="#42e3b2"/>
+    <path class="icon" d="M-13 13V-13M-13 13H13M-13 2H13M0-13V13M-8-5h4v4h-4zM5 5h5v5H5z"/>
+    <circle cx="22" cy="-22" r="10" fill="#effbf7" stroke="#42e3b2" stroke-width="2"/>
+    <path d="m18-22 3 3 6-7" fill="none" stroke="#08785c" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g class="done" text-anchor="middle">
+    <text class="label" x="394" y="181">Issue dei dati ESG</text>
+    <text class="sub" x="394" y="203">COMPLETATA</text>
+  </g>
+
+  <!-- 3 · Sfide decisionali · active -->
+  <g class="active" data-state="active" transform="translate(664 119)">
+    <circle class="pulse" r="46" fill="none" stroke="#42e3b2" stroke-width="3" filter="url(#glow)"/>
+    <circle r="36" fill="#0c8e6c" stroke="#69f0c7" stroke-width="3" filter="url(#glow)"/>
+    <path class="icon" d="M0 14V2M0 2-12-10M0 2 12-10M-12-10v8M12-10v8M0 2V-13"/>
+  </g>
+  <g text-anchor="middle">
+    <text class="label" x="664" y="181">Sfide decisionali</text>
+    <rect x="619" y="191" width="90" height="24" rx="12" fill="#42e3b2"/>
+    <text x="664" y="208" text-anchor="middle" style="font:700 11px Arial,sans-serif;letter-spacing:1.2px;fill:#05251b">IN CORSO</text>
+  </g>
+
+  <!-- 4 · Roadmap · future -->
+  <g class="future" data-state="upcoming" transform="translate(934 119)">
+    <circle r="30" fill="#0c271f" stroke="#41665b" stroke-width="2"/>
+    <path class="icon" d="M-14 9h7V2h7v-7h7v-7h7M8-12h6v6M-11-9v-5M-14-12h6"/>
+    <text x="0" y="5" text-anchor="middle" style="font:700 13px Arial,sans-serif;fill:#9db5ad">4</text>
+  </g>
+  <g class="future" text-anchor="middle">
+    <text class="label" x="934" y="181">Roadmap e requisiti</text>
+    <text class="sub" x="934" y="203">DA INIZIARE</text>
+  </g>
+
+  <!-- 5 · Fiducia · future -->
+  <g class="future" data-state="upcoming" transform="translate(1204 119)">
+    <circle r="30" fill="#0c271f" stroke="#41665b" stroke-width="2"/>
+    <path class="icon" d="M-14 7a15 15 0 0 1 28 0M0 7l9-9M-10 13h20"/>
+    <text x="0" y="-3" text-anchor="middle" style="font:700 13px Arial,sans-serif;fill:#9db5ad">5</text>
+  </g>
+  <g class="future" text-anchor="middle">
+    <text class="label" x="1204" y="181">Fiducia stakeholder</text>
+    <text class="sub" x="1204" y="203">DA INIZIARE</text>
+  </g>
+
+  <!-- 6 · Report · future -->
+  <g class="future" data-state="upcoming" transform="translate(1474 119)">
+    <circle r="30" fill="#0c271f" stroke="#41665b" stroke-width="2"/>
+    <path class="icon" d="M-11-15H5l7 7v23h-23zM5-15v7h7M-5 1h11M-5 7h11"/>
+    <text x="0" y="-3" text-anchor="middle" style="font:700 13px Arial,sans-serif;fill:#9db5ad">6</text>
+  </g>
+  <g class="future" text-anchor="middle">
+    <text class="label" x="1474" y="181">Report finale</text>
+    <text class="sub" x="1474" y="203">DA INIZIARE</text>
+  </g>
+
+  <text x="62" y="249" style="font:500 13px Arial,sans-serif;fill:#769188">Ogni scelta aggiorna il percorso e contribuisce alla sintesi conclusiva della Quest.</text>
+</svg>

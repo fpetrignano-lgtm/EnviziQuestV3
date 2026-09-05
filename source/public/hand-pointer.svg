@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Hand pointer">
+  <defs>
+    <linearGradient id="handFill" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d9d9d9"/>
+    </linearGradient>
+    <linearGradient id="outline" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#202633"/>
+      <stop offset="100%" stop-color="#0b0f17"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <path fill="url(#outline)" d="M229 36c-28 0-51 23-51 51v179l-31-35c-23-26-63-29-89-6-26 23-29 63-6 89l107 144c20 27 52 42 85 42h96c33 0 63-18 78-47 23-43 46-95 46-136V245c0-28-23-51-51-51-11 0-22 4-31 10-8-26-33-45-61-45-13 0-25 4-35 11-10-22-32-37-58-37-11 0-21 3-30 8V87c0-28-23-51-51-51z"/>
+    <path fill="url(#handFill)" d="M229 58c-16 0-29 13-29 29v202c0 8-5 15-13 18-8 3-16 0-22-6l-49-56c-15-17-40-19-57-4-17 15-19 40-4 57l107 144c16 21 41 34 67 34h96c24 0 46-13 57-34 22-41 44-90 44-126V245c0-16-13-29-29-29s-29 13-29 29v21c0 11-9 20-20 20s-20-9-20-20v-56c0-16-13-29-29-29s-29 13-29 29v56c0 11-9 20-20 20s-20-9-20-20v-74c0-16-13-29-29-29s-29 13-29 29v74c0 11-9 20-20 20s-20-9-20-20V87c0-16-13-29-29-29z"/>
+  </g>
+</svg>
