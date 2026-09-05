@@ -358,6 +358,10 @@ interface CompanyScreenProps extends CommonProps {
   showGeo?: boolean;
   frameworkChecks?: Record<string,{inUso:boolean,diInteresse:boolean}>;
   toggleFw?: (id:string,col:"inUso"|"diInteresse")=>void;
+  fwOpen?: boolean;
+  setFwOpen?: (v:boolean)=>void;
+  rptOpen?: boolean;
+  setRptOpen?: (v:boolean)=>void;
   sustainabilityReportSince?: number|"mai";
   setSustainabilityReportSince?: (v:number|"mai")=>void;
   setEsgReadiness?: (v: EsgReadiness) => void;
@@ -375,6 +379,10 @@ export function CompanyScreen({
   showGeo = false,
   frameworkChecks,
   toggleFw,
+  fwOpen: fwOpenProp = false,
+  setFwOpen: setFwOpenProp,
+  rptOpen: rptOpenProp = false,
+  setRptOpen: setRptOpenProp,
   sustainabilityReportSince = 2024,
   setSustainabilityReportSince,
   setEsgReadiness,
@@ -420,8 +428,13 @@ export function CompanyScreen({
     datacenter: {color:"#b08adc", path:"M2,4 L18,4 L18,8 L2,8 Z M2,10 L18,10 L18,14 L2,14 Z M2,16 L18,16 L18,20 L2,20 Z M15,6 L15,6.5 M15,12 L15,12.5 M15,18 L15,18.5"},
     altro:      {color:"#e8a84a", path:"M10,2 C6.13,2 3,5.13 3,9 C3,14.25 10,22 10,22 C10,22 17,14.25 17,9 C17,5.13 13.87,2 10,2 Z M10,11.5 C8.62,11.5 7.5,10.38 7.5,9 C7.5,7.62 8.62,6.5 10,6.5 C11.38,6.5 12.5,7.62 12.5,9 C12.5,10.38 11.38,11.5 10,11.5 Z"},
   };
-  const [rptOpen,setRptOpen]=useState(false);
-  const [fwOpen,setFwOpen]=useState(false);
+  // fwOpen e rptOpen sollevati ad App per evitare reset al re-render causato da toggleFw
+  const [rptOpenLocal,setRptOpenLocal]=useState(false);
+  const [fwOpenLocal,setFwOpenLocal]=useState(false);
+  const fwOpen = setFwOpenProp ? fwOpenProp : fwOpenLocal;
+  const setFwOpen = setFwOpenProp ?? setFwOpenLocal;
+  const rptOpen = setRptOpenProp ? rptOpenProp : rptOpenLocal;
+  const setRptOpen = setRptOpenProp ?? setRptOpenLocal;
   const [zoomWarnOpen,setZoomWarnOpen]=useState(false);
   useEffect(()=>{
     const handler=(e:KeyboardEvent)=>{
@@ -745,7 +758,7 @@ export function CompanyScreen({
     )}
     {/* ── Modal fwOpen: figlio diretto di <main> per evitare clip da overflow:auto della section ── */}
     {fwOpen&&frameworkChecks&&toggleFw&&<div className="companyRptOverlay" onClick={e=>{if(e.target===e.currentTarget)setFwOpen(false)}}>
-      <div className="companyRptModal" style={{maxWidth:"1560px",width:"90vw"}}>
+      <div className="companyRptModal" style={{maxWidth:"1560px",width:"90vw"}} onClick={e=>e.stopPropagation()}>
         <div className="companyRptModalHead">
           <p className="companyRptModalTitle">{isIt?`Altri framework di interesse di ${displayCompanyName}`:`Other frameworks of interest for ${displayCompanyName}`}</p>
           <button className="companyRptModalClose" onClick={()=>setFwOpen(false)}>✕</button>
@@ -769,8 +782,8 @@ export function CompanyScreen({
                   <tr key={id} className="fwRow">
                     <td className="fwTdLabel">{label}</td>
                     <td className="fwTdArea">{area}</td>
-                    <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"inUso")}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
-                    <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.diInteresse?" fwCheckOn":""}`} onClick={()=>toggleFw(id,"diInteresse")}>{frameworkChecks[id]?.diInteresse?"☑":"☐"}</button></td>
+                    <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={e=>{e.stopPropagation();toggleFw(id,"inUso");}}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
+                    <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.diInteresse?" fwCheckOn":""}`} onClick={e=>{e.stopPropagation();toggleFw(id,"diInteresse");}}>{frameworkChecks[id]?.diInteresse?"☑":"☐"}</button></td>
                   </tr>
                 ))}
               </React.Fragment>
