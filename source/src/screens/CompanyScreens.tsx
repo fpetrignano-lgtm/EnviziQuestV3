@@ -459,15 +459,16 @@ export function CompanyScreen({
     {showGeo ? (
     <section className="geoMapsSection" style={{position:"relative",flex:1,minHeight:0}} aria-label={`${displayCompanyName} footprint`}>
       {(()=>{
-        const GEO_META: Record<SiteGeoKey,{units:string,currencies:string}> = {
-          italia:      {units:"kWh · km · m³ · L",      currencies:"EUR · ..."},
-          europa:      {units:"kWh · km · m³ · L",      currencies:"EUR · ..."},
-          uk:          {units:"kWh · mi · ft³ · gal",   currencies:"GBP · ..."},
-          nordamerica: {units:"kWh · mi · ft³ · gal",   currencies:"USD · CAD · ..."},
-          sudamerica:  {units:"kWh · km · m³ · L",      currencies:"BRL · ARS · ..."},
-          asia:        {units:"kWh · km · m³ · L",      currencies:"CNY · JPY · ..."},
-          africa:      {units:"kWh · km · m³ · L",      currencies:"ZAR · NGN · ..."},
-          australia:   {units:"kWh · km · m³ · L",      currencies:"AUD · NZD · ..."},
+        type GeoMeta = {currency:string; energy:string; volume:string; mass:string; system:string};
+        const GEO_META: Record<SiteGeoKey, GeoMeta> = {
+          italia:      {currency:"EUR",          energy:"kWh",  volume:"m³ / L",   mass:"kg / t",     system:"SI"},
+          europa:      {currency:"EUR / locale", energy:"kWh",  volume:"m³ / L",   mass:"kg / t",     system:"SI"},
+          uk:          {currency:"GBP",          energy:"kWh",  volume:"ft³ / gal",mass:"lb / ton",   system:"Imperial"},
+          nordamerica: {currency:"USD / CAD",    energy:"kWh",  volume:"ft³ / gal",mass:"lb / ton",   system:"Imperial"},
+          sudamerica:  {currency:"BRL / ARS / locale", energy:"kWh", volume:"m³ / L", mass:"kg / t", system:"SI"},
+          asia:        {currency:"CNY / JPY / locale", energy:"kWh", volume:"m³ / L", mass:"kg / t", system:"SI"},
+          africa:      {currency:"ZAR / NGN / locale", energy:"kWh", volume:"m³ / L", mass:"kg / t", system:"SI"},
+          australia:   {currency:"AUD / NZD",    energy:"kWh",  volume:"m³ / L",   mass:"kg / t",     system:"SI"},
         };
         const GEO_KEYS: SiteGeoKey[] = ["italia","europa","uk","nordamerica","sudamerica","asia","africa","australia"];
         const GEO_LABELS: Record<SiteGeoKey,{it:string,en:string}> = {
@@ -497,11 +498,9 @@ export function CompanyScreen({
         const hasAnySedes = GEO_KEYS.some(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
         const extraGeos = GEO_KEYS.slice(4).filter(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
         const visibleGeos = [...GEO_KEYS.slice(0,4), ...extraGeos];
-        const REF_UNITS = "kWh · km · m³ · L";
-        const REF_CURR  = "EUR · ...";
         const activePop = GEO_KEYS.filter(g=>(["uffici","ops","datacenter","altro"] as SiteRowKey[]).some(r=>(siteTable[r][g]??0)>0));
-        const diffUnits = activePop.filter(g=>GEO_META[g].units !== REF_UNITS);
-        const diffCurr  = activePop.filter(g=>GEO_META[g].currencies !== REF_CURR);
+        const diffUnits = activePop.filter(g=>GEO_META[g].system !== "SI");
+        const diffCurr  = activePop.filter(g=>!GEO_META[g].currency.startsWith("EUR"));
         const diffTotal = new Set([...diffUnits,...diffCurr]).size;
         const complexity = diffTotal === 0 ? null : diffTotal <= 1 ? "low" : diffTotal <= 3 ? "medium" : "high";
         const complexLabel:{[k:string]:{it:string,en:string,color:string}} = {
@@ -553,13 +552,19 @@ export function CompanyScreen({
                       const val=siteTable[d.key][g]??0;
                       return <span key={d.key} className="geoMapIconChip" style={{borderColor:d.color,color:d.color,opacity:val===0?0.35:1}}>{isIt?d.label.it:d.label.en} · {val}</span>;
                     })}</div>
-                    <div className="geoMapMetaBox geoMapMetaBoxCurr">
-                      <span className="geoMapMetaBoxLabel">{isIt?"Valute":"Currencies"}</span>
-                      <span className="geoMapMetaBoxValue">{GEO_META[g].currencies}</span>
-                    </div>
-                    <div className="geoMapMetaBox geoMapMetaBoxUnits">
-                      <span className="geoMapMetaBoxLabel">{isIt?"Unità di misura":"Units"}</span>
-                      <span className="geoMapMetaBoxValue">{GEO_META[g].units}</span>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"3px 6px",marginTop:"4px"}}>
+                      {[
+                        {label:isIt?"Valuta":"Currency",   value:GEO_META[g].currency,  color:"#f5c855"},
+                        {label:isIt?"Energia":"Energy",    value:GEO_META[g].energy,    color:"#7dd3fc"},
+                        {label:isIt?"Volume":"Volume",     value:GEO_META[g].volume,    color:"#86efac"},
+                        {label:isIt?"Massa":"Mass",        value:GEO_META[g].mass,      color:"#c4b5fd"},
+                        {label:isIt?"Sistema":"System",    value:GEO_META[g].system,    color:GEO_META[g].system==="SI"?"#39efb4":"#fca5a5"},
+                      ].map(({label,value,color})=>(
+                        <div key={label} style={{background:"rgba(0,0,0,.18)",borderRadius:"5px",padding:"3px 6px",borderLeft:`2px solid ${color}`}}>
+                          <div style={{fontSize:"9px",fontWeight:700,color:"#6a9a88",letterSpacing:".08em",textTransform:"uppercase",lineHeight:1.2}}>{label}</div>
+                          <div style={{fontSize:"11px",fontWeight:600,color,lineHeight:1.3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{value}</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
@@ -575,6 +580,12 @@ export function CompanyScreen({
                 {isIt
                   ? <>{displayCompanyName} ha la necessità di convertire <strong>unità di misura</strong> e <strong>valute</strong> nel proprio reporting ESG, con un livello di complessità <span style={{color:complexLabel[complexity].color,fontWeight:700}}>{complexLabel[complexity].it}</span>.</>
                   : <>{displayCompanyName} needs to convert <strong>measurement units</strong> and <strong>currencies</strong> in its ESG reporting, with a <span style={{color:complexLabel[complexity].color,fontWeight:700}}>{complexLabel[complexity].en}</span> level of complexity.</>
+                }
+              </p>
+              <p style={{margin:0,fontSize:"clamp(10px,0.85vw,12px)",color:"#7a9a90",lineHeight:1.5,borderTop:"1px solid rgba(57,239,180,.1)",paddingTop:"8px"}}>
+                {isIt
+                  ? <>⚠ <strong style={{color:"#b5c9c1"}}>Normalizzazione richiesta.</strong> Sistemi Imperial e locali richiedono conversione in SI prima dell'aggregazione. Valute non-EUR richiedono tassi di cambio storici per il confronto. Envizi gestisce automaticamente conversioni di unità, tassi di cambio e normalizzazione per intensità.</>
+                  : <>⚠ <strong style={{color:"#b5c9c1"}}>Normalisation required.</strong> Imperial and local systems must be converted to SI before aggregation. Non-EUR currencies require historical exchange rates for comparison. Envizi automatically handles unit conversions, exchange rates and intensity normalisation.</>
                 }
               </p>
             </div>}
