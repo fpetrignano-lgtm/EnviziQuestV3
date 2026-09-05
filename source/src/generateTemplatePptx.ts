@@ -743,7 +743,7 @@ async function generateCompanySlidePng(data: SummaryPptxData, isIt: boolean): Pr
     const stats = [
       [isIt?"Settore":"Sector", data.sectorLabel],
       [isIt?"Mercato":"Market", data.marketLabel],
-      [isIt?"Fatturato":"Revenue", `${data.revenue} ${data.dimUnit}`],
+      [isIt?"Fatturato":"Revenue", `${data.revenue} ${data.dimUnit}${data.revenueYear ? ` (${data.revenueYear})` : ""}`],
       [isIt?"Dipendenti":"Employees", String(data.employees?.toLocaleString() ?? "—")],
     ];
     let y = 90;
@@ -801,6 +801,21 @@ async function generateCompanySlidePng(data: SummaryPptxData, isIt: boolean): Pr
     const matDesc = String(data.maturityDesc ?? "");
     ctx.fillText(matDesc.slice(0, 70), COL1_X + 12, 368);
     if (matDesc.length > 70) ctx.fillText(matDesc.slice(70, 140), COL1_X + 12, 382);
+
+    // Bilancio di sostenibilità: riga sotto la maturity box
+    const srSincePng = data.sustainabilityReportSince;
+    const srTextPng = srSincePng === "mai" || srSincePng === undefined
+      ? (isIt ? "Bilancio di sostenibilità: non ancora pubblicato" : "Sustainability report: not yet published")
+      : (isIt ? `Bilancio di sostenibilità pubblicato dal ${srSincePng}` : `Sustainability report published since ${srSincePng}`);
+    ctx.fillStyle = "#f0f7f3";
+    roundRect(ctx, COL1_X, 400, W/2 - 72, 36, 8);
+    ctx.fill();
+    ctx.fillStyle = "#1a7a4a";
+    ctx.font = "bold 10px Arial, sans-serif";
+    ctx.fillText((isIt ? "BILANCIO DI SOSTENIBILITÀ" : "SUSTAINABILITY REPORT"), COL1_X + 10, 416);
+    ctx.fillStyle = "#0a2a1a";
+    ctx.font = "bold 11px Arial, sans-serif";
+    ctx.fillText(srTextPng.slice(0, 58), COL1_X + 10, 430);
 
     // ── Right column: geographic footprint ────────────────────────────
     ctx.fillStyle = "#1a7a4a";
@@ -1017,6 +1032,8 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     "500":      `${data.employees.toLocaleString()}`,
     "54":       `${totalSedi}`,
     "8":        `${activeGeoCount}`,
+    // Revenue card sub-label: add year
+    "Ricavi annui": isIt ? `Ricavi ${data.revenueYear ?? ""}` : `Revenue ${data.revenueYear ?? ""}`,
     // Readiness block (id=23 label, id=24 desc)
     "BASSA": data.maturityTitle,
     "I dati sono pochi e frammentati. Erica cerca un sistema unico per raccoglierli, identificare i gap e organizzare le evidenze.":
@@ -1282,6 +1299,15 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
       const csrdLinkRPr = `<a:rPr lang="it-IT" sz="1100" b="1" dirty="0"><a:solidFill><a:srgbClr val="C05000"/></a:solidFill><a:latin typeface="Calibri"/><a:ea typeface="Calibri"/><a:cs typeface="Calibri"/><a:hlinkClick r:id="${csrdHlinkRid}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/></a:rPr>`;
       const csrdShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="997" name="csrd_sentence"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5880000"/><a:ext cx="11353800" cy="400000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r>${csrdRPr}<a:t>${escapeXml(csrdSentence)}   </a:t></a:r><a:r>${csrdLinkRPr}<a:t>${escapeXml(csrdLinkLabel)} ↗</a:t></a:r></a:p></p:txBody></p:sp>`;
       xmlStr = xmlStr.replace("</p:spTree>", csrdShapeXml + "</p:spTree>");
+
+      // Bilancio di sostenibilità: inject shape above CSRD line
+      const srSince = data.sustainabilityReportSince;
+      const srRPr = `<a:rPr lang="it-IT" sz="1100" b="0" dirty="0"><a:solidFill><a:srgbClr val="4D6D67"/></a:solidFill><a:latin typeface="Calibri"/><a:ea typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+      const srText = srSince === "mai" || srSince === undefined
+        ? (isIt ? "Bilancio di sostenibilità: non ancora pubblicato" : "Sustainability report: not yet published")
+        : (isIt ? `Bilancio di sostenibilità pubblicato dal ${srSince}` : `Sustainability report published since ${srSince}`);
+      const srShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="996" name="sr_since"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5560000"/><a:ext cx="11353800" cy="380000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="ctr"/><a:r>${srRPr}<a:t>${escapeXml(srText)}</a:t></a:r></a:p></p:txBody></p:sp>`;
+      xmlStr = xmlStr.replace("</p:spTree>", srShapeXml + "</p:spTree>");
     }
 
     // Slide 7: replace company name in subtitle + populate recommendation blocks from priorities

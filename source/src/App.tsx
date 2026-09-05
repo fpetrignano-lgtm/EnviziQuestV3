@@ -605,6 +605,8 @@ export default function Home(){
       isIt,geoDistrib,siteTable,workshopDate,consultantName,companyLogo,participantRole,participantCompany,businessUnit,reportingPath,
       needCapabilities:needIdToCapability,
       frameworkChecks,
+      revenueYear,
+      sustainabilityReportSince,
     };
   };
 
