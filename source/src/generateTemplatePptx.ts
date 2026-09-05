@@ -353,7 +353,7 @@ function processSlide4Frameworks(
   // already shown when inUsoCount >= 2. When no extra fw are selected the
   // block keeps its original template text.
   const extraInUso     = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.inUso).map(([,l]) => l);
-  const extraInteresse = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.diInteresse && !frameworkChecks[k]?.inUso).map(([,l]) => l);
+  const extraInteresse = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.diInteresse).map(([,l]) => l);
   if ((extraInUso.length > 0 || extraInteresse.length > 0) && inUsoCount >= 2) {
     const parts: string[] = [];
     if (extraInUso.length > 0)     parts.push(`In uso: ${extraInUso.join(", ")}`);
