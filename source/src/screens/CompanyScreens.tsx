@@ -456,6 +456,24 @@ export function CompanyScreen({
       </span>
     </div>;
   };
+  // Copertura Envizi per framework
+  type FwCov = {level:"alto"|"medio"|"limitato"; it:string; en:string};
+  const FW_ENVIZI_COV: Record<string,FwCov> = {
+    ghg:        {level:"alto",    it:"Calcolo Scope 1, 2 e principali categorie Scope 3 con fattori gestiti centralmente.",                         en:"Scope 1, 2 and key Scope 3 categories with centrally managed emission factors."},
+    tcfd:       {level:"medio",   it:"Supporta la raccolta di dati climatici e la disclosure; la governance del framework rimane in capo all'azienda.", en:"Supports climate data collection and disclosure; framework governance remains with the organisation."},
+    cdp:        {level:"medio",   it:"Facilita la preparazione dei dati richiesti dal questionario CDP; la compilazione e l'invio restano manuali.",    en:"Helps prepare data for the CDP questionnaire; submission remains a manual step."},
+    gri:        {level:"alto",    it:"Raccolta e aggregazione dei principali indicatori GRI con tracciabilità dalla fonte.",                            en:"Collection and aggregation of key GRI indicators with source traceability."},
+    sasb:       {level:"medio",   it:"Supporta la raccolta degli indicatori settoriali SASB; la mappatura ai topic standard è a carico dell'utente.",   en:"Supports collection of SASB sector indicators; mapping to standard topics is the user's responsibility."},
+    sdg:        {level:"limitato",it:"Può fornire dati di base utili al reporting SDG, ma non offre una mappatura strutturata agli obiettivi ONU.",     en:"Can provide basic data useful for SDG reporting, but does not offer structured mapping to UN goals."},
+    ifrs_s1:    {level:"medio",   it:"Supporta la raccolta di dati su rischi e opportunità ESG richiesti da IFRS S1; la narrativa resta all'azienda.", en:"Supports collection of ESG risk and opportunity data required by IFRS S1; narrative disclosure remains with the organisation."},
+    ifrs_s2:    {level:"medio",   it:"Facilita la raccolta di metriche climatiche allineate a IFRS S2; l'analisi degli scenari è esterna al sistema.", en:"Facilitates collection of climate metrics aligned with IFRS S2; scenario analysis sits outside the system."},
+    sfdr:       {level:"limitato",it:"Può fornire dati ambientali e sociali utili agli indicatori PAI; la struttura SFDR richiede integrazione esterna.",en:"Can supply environmental and social data useful for PAI indicators; SFDR structure requires external integration."},
+    gresb:      {level:"medio",   it:"Supporta la raccolta di dati energetici e di emissione per immobili e infrastrutture richiesti da GRESB.",        en:"Supports collection of energy and emission data for real estate and infrastructure assets required by GRESB."},
+    secr:       {level:"alto",    it:"Calcolo e reportistica di energia e carbonio per le entità soggette al regime SECR nel Regno Unito.",             en:"Energy and carbon calculation and reporting for entities subject to the UK SECR regime."},
+    energystar: {level:"medio",   it:"Raccolta e aggregazione dei dati energetici necessari; la certificazione ENERGY STAR avviene tramite EPA Portfolio Manager.", en:"Collection and aggregation of required energy data; ENERGY STAR certification occurs via EPA Portfolio Manager."},
+    nabers:     {level:"medio",   it:"Supporta la raccolta dei dati energetici per gli edifici; la valutazione NABERS è effettuata da un assessor esterno.", en:"Supports energy data collection for buildings; NABERS rating is carried out by an external assessor."},
+  };
+
   // Dati dei modal — definiti qui (scope componente) perché i modal sono figli diretti del <main>
   type RptPath = {num:1|2|3|4|5;label:{it:string;en:string};desc:{it:string;en:string};for:{it:string;en:string}};
   const rptPaths:RptPath[]=[
@@ -768,6 +786,7 @@ export function CompanyScreen({
             <tr>
               <th className="fwThLabel">{isIt?"Framework / requisito":"Framework / requirement"}</th>
               <th className="fwThArea">Area</th>
+              <th className="fwThEnvizi">{isIt?"Copertura Envizi":"Envizi Coverage"}</th>
               <th className="fwThCheck">{isIt?"In uso":"In use"}</th>
               <th className="fwThCheck">{isIt?"Di interesse":"Of interest"}</th>
             </tr>
@@ -776,16 +795,28 @@ export function CompanyScreen({
             {fwGroups.map(group=>(
               <React.Fragment key={group.cat.it}>
                 <tr style={{background:"transparent"}}>
-                  <td colSpan={4} style={{padding:"10px 0 4px",fontSize:"11px",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"#39efb4",borderTop:"1px solid rgba(57,239,180,.12)",background:"transparent"}}>{isIt?group.cat.it:group.cat.en}</td>
+                  <td colSpan={5} style={{padding:"10px 0 4px",fontSize:"11px",fontWeight:700,letterSpacing:".12em",textTransform:"uppercase",color:"#39efb4",borderTop:"1px solid rgba(57,239,180,.12)",background:"transparent"}}>{isIt?group.cat.it:group.cat.en}</td>
                 </tr>
-                {group.rows.map(({id,label,area})=>(
+                {group.rows.map(({id,label,area})=>{
+                  const cov = FW_ENVIZI_COV[id];
+                  const lvlColor = cov?.level==="alto"?"#39efb4":cov?.level==="medio"?"#fbbf24":"#9ca3af";
+                  const lvlLabel = cov ? (isIt
+                    ? cov.level==="alto"?"Alto":cov.level==="medio"?"Medio":"Limitato"
+                    : cov.level==="alto"?"High":cov.level==="medio"?"Medium":"Limited"
+                  ) : "—";
+                  return (
                   <tr key={id} className="fwRow">
                     <td className="fwTdLabel">{label}</td>
                     <td className="fwTdArea">{area}</td>
+                    <td className="fwTdEnvizi">
+                      {cov&&<span className="fwEnviziLevel" style={{color:lvlColor,borderColor:lvlColor}}>{lvlLabel}</span>}
+                      {cov&&<span className="fwEnviziDesc">{isIt?cov.it:cov.en}</span>}
+                    </td>
                     <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={e=>{e.stopPropagation();toggleFw(id,"inUso");}}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
                     <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.diInteresse?" fwCheckOn":""}`} onClick={e=>{e.stopPropagation();toggleFw(id,"diInteresse");}}>{frameworkChecks[id]?.diInteresse?"☑":"☐"}</button></td>
                   </tr>
-                ))}
+                  );
+                })}
               </React.Fragment>
             ))}
           </tbody>
