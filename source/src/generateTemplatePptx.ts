@@ -1156,9 +1156,9 @@ async function appendReportFindings(
         para(rprBold, isIt ? "Obiettivo:" : "Objective:") +
         para(rpr, obLabel) +
         paraEmpty() +
-        // "Use case:" in grassetto + scenari su righe proprie
+        // "Use case:" in grassetto + scenari su righe proprie (separati da riga vuota)
         para(rprBold, "Use case:") +
-        ucLines.map(l => para(rpr, l)).join("") +
+        ucLines.map(l => para(rpr, l)).join(paraEmpty()) +
         paraEmpty() +
         // "Capacità digitali necessarie:" in grassetto + capacità su righe proprie
         para(rprBold, isIt ? "Capacità digitali necessarie:" : "Required digital capabilities:") +
