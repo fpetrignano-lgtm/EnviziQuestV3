@@ -1219,8 +1219,8 @@ export function PriorityMatrixScreen({
             const next = Math.max(1, Math.min(10, CVal + delta));
             setNeedCriticality(prev => ({...prev, [need.id]: next}));
           };
-          return <div style={{position:"fixed",inset:0,zIndex:20000,background:"rgba(4,12,10,.88)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={closeUcPopup}>
-            <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"16px",padding:"36px 40px",maxWidth:"1120px",width:"96vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)",maxHeight:"90vh",overflowY:"auto",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
+          return <div style={{position:"fixed",inset:0,zIndex:20000,background:"rgba(4,12,10,.88)",display:"flex",alignItems:"stretch",justifyContent:"center"}} onClick={closeUcPopup}>
+           <div style={{background:"#0d1f19",border:"none",borderRadius:"0",padding:"36px 40px",width:"100vw",maxWidth:"100vw",height:"100vh",maxHeight:"100vh",overflowY:"auto",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"12px",marginBottom:"6px"}}>
                 <div>
