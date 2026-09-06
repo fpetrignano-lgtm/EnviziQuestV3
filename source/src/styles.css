@@ -352,6 +352,8 @@
 .pmDot{cursor:default}
 .pmDot circle{transition:r .15s,opacity .15s}
 .pmDot:hover circle{r:10;opacity:1}
+@keyframes pmBounce{0%,100%{transform:translateY(0px)}50%{transform:translateY(-7px)}}
+.pm-arrow-group{animation:pmBounce 0.85s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom}
 
 .bridgeScreen{height:100vh;overflow:hidden;background:#07110e;display:grid;grid-template-rows:76px auto 1fr}
 .bridgeIntroBar{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 4vw 16px;border-bottom:1px solid #152920;background:rgba(6,14,11,.8)}

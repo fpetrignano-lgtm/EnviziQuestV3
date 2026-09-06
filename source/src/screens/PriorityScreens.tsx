@@ -1005,7 +1005,7 @@ export function PriorityMatrixScreen({
                 m.ly=Math.max(m.bh/2+2,Math.min(MATRIX_H-m.bh/2-2,m.ly));
               }
             }
-            return needMeta.map(({n,vis,bw,bh,ox,oy,lx,ly})=>{
+            const boxes = needMeta.map(({n,vis,bw,bh,ox,oy,lx,ly})=>{
               const inFocus=n.relNorm>=focusMinR&&n.crit>=focusMinC;
               const nMission=needIdToMission[n.id]??-1;
               const isTransversal=nMission===-1;
@@ -1030,23 +1030,47 @@ export function PriorityMatrixScreen({
                 {isTransversal&&pmMissionFilter!==null&&<text x={lx+bw/2-3} y={ly-bh/2+8} fontSize="5.5" fill="#f5c542" fontFamily="monospace" fontWeight="700" textAnchor="end" opacity="0.9">TRASV.</text>}
                 {isDone&&isHigh&&<text x={lx+bw/2-2} y={ly-bh/2+8} fontSize="8" fill="#39efb4" fontFamily="monospace" fontWeight="900" textAnchor="end" opacity="1">✓</text>}
                 <text x={lx} y={ly+bh/2-3} fontSize="7" fill={boxStrokeColor} fontFamily="monospace" fontWeight="700" opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
-                {/* Freccia animata punta al riquadro target */}
-                {isUcTarget&&(()=>{
-                  const stepNum = ucNeeds.findIndex(x=>x.id===n.id)+1;
-                  const total = ucNeeds.length;
-                  return <g>
-                    <style>{`@keyframes pmArrowBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
-                    {/* badge step N/total */}
-                    <rect x={lx-18} y={ly-bh/2-34} width={36} height={14} rx="4" fill="rgba(253,224,71,.18)" stroke="rgba(253,224,71,.55)" strokeWidth="0.8"/>
-                    <text x={lx} y={ly-bh/2-24} textAnchor="middle" fontSize="7.5" fill="#fde047" fontFamily="monospace" fontWeight="700">{stepNum}/{total}</text>
-                    {/* freccia rimbalzante */}
-                    <g style={{animation:"pmArrowBounce 0.9s ease-in-out infinite",transformOrigin:`${lx}px ${ly-bh/2-16}px`}}>
-                      <text x={lx} y={ly-bh/2-8} textAnchor="middle" fontSize="16" fill="#fde047" fontFamily="monospace" fontWeight="900">▼</text>
-                    </g>
-                  </g>;
-                })()}
               </g>;
             });
+
+            // Indicatore freccia+manina: FUORI dai box (opacity indipendente), sempre visibile
+            const arrowEl = arrowTargetId ? (()=>{
+              const tm = needMeta.find(m=>m.n.id===arrowTargetId);
+              if(!tm) return null;
+              const {lx,ly,bh} = tm;
+              const stepNum = ucNeeds.findIndex(x=>x.id===arrowTargetId)+1;
+              const total = ucNeeds.length;
+              const ay = ly - bh/2 - 6; // punta sopra il box
+              // manina SVG path (16×20 viewBox) centrata su (lx, ay-20)
+              const hs = 14; // scala manina
+              const hx = lx - hs*0.38; // offset centramento X
+              const hy = ay - hs*1.35; // sopra la freccia
+              // path manina stilizzata (pointing hand, orientata verso il basso)
+              const handPath = `M${hx+7},${hy+18} C${hx+7},${hy+20} ${hx+9},${hy+21} ${hx+9},${hy+19}
+                L${hx+9},${hy+10} C${hx+9},${hy+9} ${hx+10},${hy+8} ${hx+11},${hy+8}
+                C${hx+12},${hy+8} ${hx+13},${hy+9} ${hx+13},${hy+10}
+                L${hx+13},${hy+13} C${hx+13},${hy+12} ${hx+14},${hy+11} ${hx+15},${hy+11}
+                C${hx+16},${hy+11} ${hx+17},${hy+12} ${hx+17},${hy+13}
+                L${hx+17},${hy+14} C${hx+17},${hy+13} ${hx+18},${hy+12} ${hx+19},${hy+12}
+                C${hx+20},${hy+12} ${hx+21},${hy+13} ${hx+21},${hy+14}
+                L${hx+21},${hy+17} C${hx+21},${hy+19} ${hx+20},${hy+21} ${hx+18},${hy+21}
+                L${hx+11},${hy+21} C${hx+9},${hy+21} ${hx+7},${hy+20} ${hx+7},${hy+18} Z
+                M${hx+7},${hy+8} L${hx+7},${hy+3} C${hx+7},${hy+1} ${hx+9},${hy+0} ${hx+11},${hy+0}
+                C${hx+12},${hy+0} ${hx+13},${hy+1} ${hx+13},${hy+2}`;
+              return <g key="arrow-indicator" style={{pointerEvents:"none"}}>
+                <g className="pm-arrow-group">
+                  {/* badge step */}
+                  <rect x={lx-16} y={hy-18} width={32} height={13} rx="3" fill="rgba(253,224,71,.22)" stroke="#fde047" strokeWidth="0.9"/>
+                  <text x={lx} y={hy-9} textAnchor="middle" fontSize="8" fill="#fde047" fontFamily="monospace" fontWeight="800">{stepNum}/{total}</text>
+                  {/* manina path */}
+                  <path d={handPath} fill="#fde047" opacity="0.92" stroke="#c8a800" strokeWidth="0.5"/>
+                  {/* freccia triangolare */}
+                  <polygon points={`${lx},${ay} ${lx-8},${ay-14} ${lx+8},${ay-14}`} fill="#fde047" opacity="0.95"/>
+                </g>
+              </g>;
+            })() : null;
+
+            return [...boxes, arrowEl].filter(Boolean);
           })()}
         </svg>
         </div>
