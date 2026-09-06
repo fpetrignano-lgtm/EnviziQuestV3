@@ -941,6 +941,281 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 }
 
 // ── Main export ────────────────────────────────────────────────────────────────
+// ── Label obiettivo (priority) → nome leggibile ───────────────────────────────
+const PRIO_LABEL_IT: Record<string, string> = {
+  credit:     "Obiettivo credito e finanza ESG",
+  compliance: "Obiettivo compliance e reporting",
+  customers:  "Obiettivo clienti e mercato",
+  efficiency: "Obiettivo efficienza operativa",
+  supply:     "Obiettivo supply chain",
+  reputation: "Obiettivo reputazione e persone",
+};
+const PRIO_LABEL_EN: Record<string, string> = {
+  credit:     "ESG credit & finance objective",
+  compliance: "Compliance & reporting objective",
+  customers:  "Customers & market objective",
+  efficiency: "Operational efficiency objective",
+  supply:     "Supply chain objective",
+  reputation: "Reputation & people objective",
+};
+
+// ── Sintesi finale ────────────────────────────────────────────────────────────
+function buildFindingsSummary(
+  data: SummaryPptxData,
+  isIt: boolean,
+  companyName: string
+): string {
+  const needs = data.critItems.slice(0, 5);
+  const prioNames = [...new Set(needs.map(n => n.priority))];
+  const caps = needs
+    .map(n => data.needCapabilities?.[n.needId ?? ""])
+    .filter(Boolean)
+    .map(c => (isIt ? c!.it : c!.en));
+  const uniqueCaps = [...new Set(caps)].slice(0, 4);
+
+  if (isIt) {
+    return `L'analisi condotta con ${companyName} ha evidenziato cinque esigenze prioritarie nell'ambito della gestione dei dati ESG, concentrate negli obiettivi di ${prioNames.join(", ")}.\n\n` +
+      `Questi use case riflettono sfide operative concrete: dalla tracciabilità dei dati alla rendicontazione verso stakeholder finanziari e normativi, fino al monitoraggio delle performance di decarbonizzazione.\n\n` +
+      `Le capacità digitali necessarie per rispondere a queste esigenze includono: ${uniqueCaps.join("; ")}.\n\n` +
+      `IBM Envizi offre una piattaforma integrata progettata per rispondere a questi requisiti in modo nativo, riducendo la dipendenza da elaborazioni manuali, garantendo la tracciabilità end-to-end e accelerando i cicli di rendicontazione. ` +
+      `Una valutazione approfondita delle capacità digitali disponibili e di quelle da acquisire rappresenta il passo naturale per tradurre le priorità identificate in un piano di trasformazione concreto e misurabile.`;
+  } else {
+    return `The analysis conducted with ${companyName} highlighted five priority needs in ESG data management, concentrated across the objectives of ${prioNames.join(", ")}.\n\n` +
+      `These use cases reflect concrete operational challenges: from data traceability to reporting for financial and regulatory stakeholders, through to decarbonisation performance monitoring.\n\n` +
+      `The digital capabilities required to address these needs include: ${uniqueCaps.join("; ")}.\n\n` +
+      `IBM Envizi offers an integrated platform designed to address these requirements natively, reducing dependency on manual processing, ensuring end-to-end traceability and accelerating reporting cycles. ` +
+      `A thorough assessment of available and required digital capabilities is the natural next step to translate the identified priorities into a concrete, measurable transformation plan.`;
+  }
+}
+
+// ── Escape XML ───────────────────────────────────────────────────────────────
+function xmlEsc(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
+// ── Append Report Findings slides to the main PPTX zip ───────────────────────
+async function appendReportFindings(
+  mainZip: JSZip,
+  data: SummaryPptxData,
+  isIt: boolean,
+  companyName: string
+): Promise<void> {
+  // Fetch the findings template
+  let tplRes: Response;
+  try {
+    tplRes = await fetch(`./report-findings-template.pptx?v=${Date.now()}`);
+    if (!tplRes.ok) return; // silent skip if template not present
+  } catch {
+    return;
+  }
+  const tplBuf = await tplRes.arrayBuffer();
+  const tplZip = await JSZip.loadAsync(tplBuf);
+
+  // How many slides does the main PPTX already have?
+  const presFile = mainZip.file("ppt/presentation.xml");
+  if (!presFile) return;
+  let presXml = await presFile.async("string");
+  const existingSlideCount = (presXml.match(/<p:sldId /g) ?? []).length;
+
+  // Copy media from template into main (prefix tpl_ to avoid collisions)
+  const tplMediaFiles = Object.keys(tplZip.files).filter(f => f.startsWith("ppt/media/"));
+  for (const mf of tplMediaFiles) {
+    const fname = mf.replace("ppt/media/", "");
+    const destPath = `ppt/media/rf_${fname}`;
+    if (!mainZip.file(destPath)) {
+      const bytes = await tplZip.file(mf)!.async("uint8array");
+      mainZip.file(destPath, bytes);
+    }
+  }
+
+  // Copy slide layouts/masters references are kept from the main template.
+  // We only copy the 3 slide XMLs, rewriting rIds to point to existing layout rIds.
+
+  const FINDINGS_SLIDE_COUNT = 3;
+  // Build per-need data: top 5 critItems
+  const top5 = data.critItems.slice(0, 5);
+
+  for (let tplSlideIdx = 1; tplSlideIdx <= FINDINGS_SLIDE_COUNT; tplSlideIdx++) {
+    const newSlideNum = existingSlideCount + tplSlideIdx;
+    const tplSlidePath = `ppt/slides/slide${tplSlideIdx}.xml`;
+    const tplSlideRelsPath = `ppt/slides/_rels/slide${tplSlideIdx}.xml.rels`;
+    const tplSlideFile = tplZip.file(tplSlidePath);
+    if (!tplSlideFile) continue;
+
+    let slideXml = await tplSlideFile.async("string");
+    let slideRels = "";
+    const tplRelsFile = tplZip.file(tplSlideRelsPath);
+    if (tplRelsFile) slideRels = await tplRelsFile.async("string");
+
+    // ── Rewrite media rIds in rels to point to rf_ prefixed files ────────────
+    // Map old rId → new rId (keep same id, update target path)
+    slideRels = slideRels.replace(
+      /Target="\.\.\/media\/([^"]+)"/g,
+      (_m: string, fname: string) => `Target="../media/rf_${fname}"`
+    );
+
+    // ── Point slide layout to the first layout of main PPTX ─────────────────
+    // Replace slideLayout rel target with the main's slideLayout1
+    slideRels = slideRels.replace(
+      /Target="\.\.\/slideLayouts\/slideLayout\d+\.xml"/g,
+      'Target="../slideLayouts/slideLayout1.xml"'
+    );
+
+    // ── Dynamic text injection ────────────────────────────────────────────────
+    if (tplSlideIdx === 1 || tplSlideIdx === 2) {
+      // Each findings slide has 3 content rows (needs)
+      // Slide 1: needs 1-3, Slide 2: needs 4-5 (+ empty 3rd row)
+      const offset = (tplSlideIdx - 1) * 3;
+
+      // Use find-replace on the placeholder strings (more robust than shape IDs)
+      const rowPlaceholders = [
+        {
+          sfida: ["Testo sfida numero 1 nella matrice", "La principale sfida di dati è segue Testo sfida numero 1"],
+          uc:    ["Testo da pop up in app 23 · priority Matrix associato alla sfida numero 1"],
+          cap:   ["Testo da foglio excel Use case, testo in colonna F e G"],
+          ob:    ["Obiettivo compliance e reporting"],
+        },
+        {
+          sfida: ["Testo sfida numero 2 nella matrice", "La principale sfida di dati è segue Testo sfida numero 2"],
+          uc:    [], cap: [], ob: ["Obiettivo compliance e reporting"],
+        },
+        {
+          sfida: ["Testo sfida numero 3 nella matrice", "La principale sfida di dati è segue Testo sfida numero 3"],
+          uc:    [], cap: [], ob: ["Obiettivo compliance e reporting"],
+        },
+      ];
+
+      // Replace each row's placeholders
+      for (let row = 0; row < 3; row++) {
+        const needIdx = offset + row;
+        const need = top5[needIdx];
+        const ph = rowPlaceholders[row];
+
+        // Obiettivo (priority label)
+        const obLabel = need
+          ? (isIt ? PRIO_LABEL_IT[need.priority] ?? need.priority : PRIO_LABEL_EN[need.priority] ?? need.priority)
+          : "";
+        for (const p of ph.ob) {
+          slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(obLabel));
+        }
+
+        // Sfida (need label)
+        const sfidaText = need ? need.label : "";
+        for (const p of ph.sfida) {
+          slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(sfidaText));
+        }
+
+        // Use case (selected scenarios concatenated)
+        if (need) {
+          const selIdxs = data.ucSelections?.[need.needId ?? ""] ?? [];
+          const scenarios = data.ucScenarios?.[need.needId ?? ""] ?? [];
+          const ucText = selIdxs.length > 0
+            ? selIdxs.map(i => scenarios[i] ?? "").filter(Boolean).join("\n• ")
+            : (isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)");
+          const fullUcText = selIdxs.length > 0 ? "• " + ucText : ucText;
+          if (ph.uc.length > 0) {
+            for (const p of ph.uc) {
+              slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(fullUcText));
+            }
+          } else {
+            // Row 2-3: find the second/third occurrence of the generic uc placeholder
+            slideXml = replaceNthOccurrence(
+              slideXml,
+              "Testo da pop up in app 23",
+              xmlEsc(fullUcText),
+              row  // 0-indexed occurrence
+            );
+          }
+
+          // Capacità
+          const capText = data.needCapabilities?.[need.needId ?? ""]
+            ? (isIt ? data.needCapabilities![need.needId!].it : data.needCapabilities![need.needId!].en)
+            : (isIt ? "(capacità da definire)" : "(capability to be defined)");
+          if (ph.cap.length > 0) {
+            for (const p of ph.cap) {
+              slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(capText));
+            }
+          } else {
+            slideXml = replaceNthOccurrence(
+              slideXml,
+              "Testo da foglio excel Use case",
+              xmlEsc(capText),
+              row
+            );
+          }
+        }
+      }
+
+      // Replace intro sentence (top of slide)
+      const introOld = "Erica presenta criticità operative in ambito ESG che richiedono l&apos;esame di specifiche capacità digitali a supporto degli use case presi in esame.";
+      const introOld2 = "Erica presenta criticità operative in ambito ESG che richiedono l'esame di specifiche capacità digitali a supporto degli use case presi in esame.";
+      const introNew = isIt
+        ? `${xmlEsc(companyName)} presenta criticità operative in ambito ESG che richiedono l&apos;esame di specifiche capacità digitali a supporto degli use case presi in esame.`
+        : `${xmlEsc(companyName)} presents operational ESG challenges requiring specific digital capabilities to support the use cases analysed.`;
+      slideXml = slideXml.replace(new RegExp(escapeRe(introOld), "g"), introNew);
+      slideXml = slideXml.replace(new RegExp(escapeRe(introOld2), "g"), introNew.replace("&apos;", "'"));
+
+    } else if (tplSlideIdx === 3) {
+      // Slide 3: Conclusioni — replace "Valutazione" with full generated summary
+      const summary = buildFindingsSummary(data, isIt, companyName);
+      slideXml = slideXml.replace(
+        new RegExp(escapeRe("Valutazione"), "g"),
+        xmlEsc(summary)
+      );
+    }
+
+    // ── Write slide XML and rels into main zip ────────────────────────────────
+    const newSlidePath = `ppt/slides/slide${newSlideNum}.xml`;
+    const newSlideRelsPath = `ppt/slides/_rels/slide${newSlideNum}.xml.rels`;
+    mainZip.file(newSlidePath, slideXml);
+    mainZip.file(newSlideRelsPath, slideRels);
+
+    // ── Register in [Content_Types].xml ──────────────────────────────────────
+    const ctFile = mainZip.file("[Content_Types].xml");
+    if (ctFile) {
+      let ctXml = await ctFile.async("string");
+      const ctEntry = `<Override PartName="/ppt/slides/slide${newSlideNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;
+      if (!ctXml.includes(`slide${newSlideNum}.xml`)) {
+        ctXml = ctXml.replace("</Types>", `${ctEntry}</Types>`);
+        mainZip.file("[Content_Types].xml", ctXml);
+      }
+    }
+
+    // ── Register in presentation.xml sldIdLst ────────────────────────────────
+    const newSlideId = 300 + newSlideNum; // unique id well above existing
+    const sldIdEntry = `<p:sldId id="${newSlideId}" r:id="rFnd${newSlideNum}"/>`;
+    presXml = presXml.replace("</p:sldIdLst>", `${sldIdEntry}</p:sldIdLst>`);
+
+    // ── Register relationship in presentation.xml.rels ───────────────────────
+    const presRelsFile = mainZip.file("ppt/_rels/presentation.xml.rels");
+    if (presRelsFile) {
+      let presRels = await presRelsFile.async("string");
+      const relEntry = `<Relationship Id="rFnd${newSlideNum}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newSlideNum}.xml"/>`;
+      if (!presRels.includes(`rFnd${newSlideNum}`)) {
+        presRels = presRels.replace("</Relationships>", `${relEntry}</Relationships>`);
+        mainZip.file("ppt/_rels/presentation.xml.rels", presRels);
+      }
+    }
+  }
+
+  // Write updated presentation.xml
+  mainZip.file("ppt/presentation.xml", presXml);
+}
+
+// ── Escape regex special chars ────────────────────────────────────────────────
+function escapeRe(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ── Replace Nth occurrence of a string ───────────────────────────────────────
+function replaceNthOccurrence(str: string, search: string, replacement: string, n: number): string {
+  let count = -1;
+  return str.replace(new RegExp(escapeRe(search), "g"), (match) => {
+    count++;
+    return count === n ? replacement : match;
+  });
+}
+
 export async function generateTemplatePptx(data: SummaryPptxData): Promise<void> {
   const isIt = data.isIt;
 
@@ -1484,6 +1759,9 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
             : `${resolvedCompanyName} uses multiple ESG frameworks and responses need to be aligned in a coherent way`);
     await processSlide4FromFwTemplate(zip, data.frameworkChecks, resolvedCompanyName, slide4Title, isIt);
   }
+
+  // ── Append Report Findings slides ────────────────────────────────────────────
+  await appendReportFindings(zip, data, isIt, resolvedCompanyName);
 
   // Generate and download
   const outBuf = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE" });

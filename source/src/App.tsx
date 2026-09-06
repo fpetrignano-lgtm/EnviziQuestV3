@@ -829,6 +829,8 @@ export default function Home(){
       frameworkChecks,
       revenueYear,
       sustainabilityReportSince,
+      ucSelections,
+      ucScenarios:USE_CASE_SCENARIOS,
     };
   };
 

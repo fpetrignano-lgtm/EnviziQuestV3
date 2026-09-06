@@ -295,6 +295,8 @@ export interface SummaryPptxData {
   frameworkChecks?: Record<string, { inUso: boolean; diInteresse: boolean }>;
   revenueYear?: number;
   sustainabilityReportSince?: number | "mai";
+  ucSelections?: Record<string, number[]>;
+  ucScenarios?: Record<string, string[]>;
 }
 
 export function generateSummaryPptx(data: SummaryPptxData) {
