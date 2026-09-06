@@ -516,49 +516,68 @@ export default function Home(){
     if(!panel) return;
     panel.style.display=journeyOpen?"flex":"none";
     if(!journeyOpen) return;
+
     const tbody=document.getElementById("envizi-journey-tbody");
     if(tbody){
       tbody.innerHTML="";
       ALL_SCREENS.forEach((s,i)=>{
         const isCurrent=s===screen;
         const tr=document.createElement("tr");
-        tr.style.cssText=`border-bottom:1px solid rgba(57,239,180,.07);background:${isCurrent?"rgba(57,239,180,.06)":"transparent"};transition:.1s;`;
+        tr.style.cssText=`border-bottom:1px solid rgba(57,239,180,.07);background:${isCurrent?"rgba(57,239,180,.06)":"transparent"};`;
         const title=JOURNEY_TITLES[s]||s;
-        tr.innerHTML=`
-          <td style="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.45);white-space:nowrap;">${String(i+1).padStart(2,"0")}</td>
-          <td style="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:${isCurrent?"#39efb4":"#6b8f80"};white-space:nowrap;">${s}</td>
-          <td style="padding:9px 10px;font-size:13px;color:${isCurrent?"#e8f5ef":"#b5c9c1"};font-weight:${isCurrent?"600":"400"};">${title}${isCurrent?' <span style="font-size:9px;font-family:var(--font-geist-mono,monospace);color:#39efb4;opacity:.7;margin-left:6px;vertical-align:middle;">← qui</span>':""}</td>
-          <td style="padding:9px 10px;text-align:right;">
-            <button data-screen="${s}" style="background:${isCurrent?"rgba(57,239,180,.18)":"rgba(57,239,180,.08)"};border:1px solid rgba(57,239,180,${isCurrent?".5":".2"});color:${isCurrent?"#39efb4":"#6b8f80"};font-family:var(--font-geist-mono,monospace);font-size:10px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;">VAI →</button>
-          </td>`;
+        // numero
+        const tdNum=document.createElement("td");
+        tdNum.style.cssText="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.45);white-space:nowrap;";
+        tdNum.textContent=String(i+1).padStart(2,"0");
+        // id
+        const tdId=document.createElement("td");
+        tdId.style.cssText=`padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:${isCurrent?"#39efb4":"#6b8f80"};white-space:nowrap;`;
+        tdId.textContent=s;
+        // titolo
+        const tdTitle=document.createElement("td");
+        tdTitle.style.cssText=`padding:9px 10px;font-size:13px;color:${isCurrent?"#e8f5ef":"#b5c9c1"};font-weight:${isCurrent?"600":"400"};`;
+        tdTitle.textContent=title;
+        if(isCurrent){
+          const badge=document.createElement("span");
+          badge.style.cssText="font-size:9px;font-family:var(--font-geist-mono,monospace);color:#39efb4;opacity:.7;margin-left:6px;";
+          badge.textContent="← qui";
+          tdTitle.appendChild(badge);
+        }
+        // bottone VAI
+        const tdBtn=document.createElement("td");
+        tdBtn.style.cssText="padding:9px 10px;text-align:right;";
+        const btn=document.createElement("button");
+        btn.style.cssText=`background:${isCurrent?"rgba(57,239,180,.18)":"rgba(57,239,180,.08)"};border:1px solid rgba(57,239,180,${isCurrent?".5":".2"});color:${isCurrent?"#39efb4":"#6b8f80"};font-family:var(--font-geist-mono,monospace);font-size:10px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;`;
+        btn.textContent="VAI →";
+        btn.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
+          if(p) p.style.display="none";
+          setJourneyOpen(false);
+          setScreenState(s);
+        });
+        tdBtn.appendChild(btn);
+        tr.appendChild(tdNum);tr.appendChild(tdId);tr.appendChild(tdTitle);tr.appendChild(tdBtn);
         tbody.appendChild(tr);
       });
       // scroll alla riga corrente
-      const currentBtn=tbody.querySelector(`[data-screen="${screen}"]`) as HTMLElement|null;
-      currentBtn?.scrollIntoView({block:"center",behavior:"smooth"});
-      // click su bottoni VAI
-      tbody.addEventListener("click",(e)=>{
-        const btn=(e.target as HTMLElement).closest("[data-screen]") as HTMLElement|null;
-        if(!btn) return;
-        const target=btn.getAttribute("data-screen") as Screen;
-        const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
-        if(p) p.style.display="none";
-        setJourneyOpen(false);
-        setScreenState(target);
-      });
+      const currentRow=tbody.querySelector(`tr:nth-child(${ALL_SCREENS.indexOf(screen)+1})`) as HTMLElement|null;
+      currentRow?.scrollIntoView({block:"center",behavior:"instant"});
     }
-    // backdrop click chiude
-    const onBackdrop=(e:MouseEvent)=>{
-      const drawer=document.getElementById("envizi-journey-drawer");
-      if(drawer&&!drawer.contains(e.target as Node)){setJourneyOpen(false);}
-    };
+
+    // close button
     const closeBtn=document.getElementById("envizi-journey-close");
-    const onClose=()=>setJourneyOpen(false);
-    panel.addEventListener("click",onBackdrop);
+    const onClose=(e:MouseEvent)=>{e.stopPropagation();setJourneyOpen(false);};
     closeBtn?.addEventListener("click",onClose);
+
+    // backdrop: click sul panel fuori dal drawer chiude
+    const drawer=document.getElementById("envizi-journey-drawer") as HTMLElement|null;
+    const onBackdrop=(e:MouseEvent)=>{if(!drawer?.contains(e.target as Node)){setJourneyOpen(false);}};
+    panel.addEventListener("click",onBackdrop);
+
     return ()=>{
-      panel.removeEventListener("click",onBackdrop);
       closeBtn?.removeEventListener("click",onClose);
+      panel.removeEventListener("click",onBackdrop);
     };
   },[journeyOpen,screen]);
 
