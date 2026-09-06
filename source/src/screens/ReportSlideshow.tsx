@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CommonProps } from "./types";
 import type { Priority } from "../types";
+import { SCENARIO_MODULES } from "../constants";
 
 type SiteGeoKey = "italia"|"europa"|"nordamerica"|"sudamerica"|"asia"|"africa"|"australia";
 type SiteRowKey = "uffici"|"ops"|"datacenter"|"altro";
@@ -501,8 +502,9 @@ function Slide6({ d }: { d: ReportData }) {
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
           {top7.map((item, i) => {
-            const cap = item.needId ? d.needCapabilities?.[item.needId] : undefined;
-            const capText = cap ? (isIt ? cap.it : cap.en) : item.priority;
+            const mods = item.needId ? SCENARIO_MODULES[item.needId] : undefined;
+            const firstMod = mods ? (mods.find(v => v.trim()) ?? "") : "";
+            const capText = firstMod ? firstMod.split("\n")[0] : item.priority;
             const cleanLabel = item.label.replace(/\s*\(.*?\)\s*$/, "").trimEnd();
             return (
               <div key={item.label} style={{

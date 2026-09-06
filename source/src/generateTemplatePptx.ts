@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import type { SummaryPptxData } from "./generateSummaryPptx";
+import { SCENARIO_MODULES } from "./constants";
 
 // ── Map PNG generator ─────────────────────────────────────────────────────────
 // Renders the same world-footprint image used in the app, with office pins
@@ -506,7 +507,7 @@ function replaceSlide3GeoTable(
 function replaceSlide7Recommendations(
   xml: string,
   critItems: SummaryPptxData["critItems"],
-  needCapabilities: SummaryPptxData["needCapabilities"],
+  _needCapabilities: SummaryPptxData["needCapabilities"],
   isIt: boolean
 ): string {
   const TITLE_IDS = [8, 13, 18, 23, 28, 33, 38];
@@ -534,10 +535,12 @@ function replaceSlide7Recommendations(
     const item = top7[i];
     // Title: need label (strip trailing parentheses if any)
     const titleText = item ? item.label.replace(/\s*\(.*?\)\s*$/, "").trimEnd() : "—";
-    // Description: IBM Envizi capability recommendation for this need
-    const cap = item?.needId ? needCapabilities?.[item.needId] : undefined;
-    const descText = cap
-      ? (isIt ? cap.it : cap.en)
+    // Description: primo valore non vuoto da SCENARIO_MODULES per questo needId
+    const mods = item?.needId ? SCENARIO_MODULES[item.needId] : undefined;
+    const firstMod = mods ? (mods.find(v => v.trim()) ?? "") : "";
+    // Prendi solo la prima riga (riga "Moduli e funzionalità: ...")
+    const descText = firstMod
+      ? firstMod.split("\n")[0]
       : item ? `${item.priority}  ·  R:${item.rel} C:${item.crit}` : "";
     xml = replaceShapeText(xml, titleId, titleText);
     xml = replaceShapeText(xml, DESC_IDS[i], descText);
@@ -986,9 +989,12 @@ function buildFindingsSummary(
   const needs = data.critItems.slice(0, 5);
   const prioNames = [...new Set(needs.map(n => n.priority))];
   const caps = needs
-    .map(n => data.needCapabilities?.[n.needId ?? ""])
-    .filter(Boolean)
-    .map(c => (isIt ? c!.it : c!.en));
+    .map(n => {
+      const mods = SCENARIO_MODULES[n.needId ?? ""];
+      const first = mods ? (mods.find(v => v.trim()) ?? "") : "";
+      return first ? first.split("\n")[0] : "";
+    })
+    .filter(Boolean);
   const uniqueCaps = [...new Set(caps)].slice(0, 4);
 
   if (isIt) {
@@ -1125,9 +1131,15 @@ async function appendReportFindings(
         ? selIdxs.map(i => scenarios[i] ?? "").filter(Boolean)
         : [(isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)")];
 
-      const cap = need ? data.needCapabilities?.[need.needId ?? ""] : undefined;
-      const capText = cap
-        ? (isIt ? cap.it : cap.en)
+      // Capacità: usa SCENARIO_MODULES (col J) per gli scenari selezionati
+      const needModules = need ? SCENARIO_MODULES[need.needId ?? ""] : undefined;
+      const modTexts = needModules && selIdxs.length > 0
+        ? [...new Set(selIdxs.map(i => needModules[i] ?? "").filter(Boolean))]
+        : needModules
+          ? [...new Set(needModules.filter(Boolean))]
+          : [];
+      const capText = modTexts.length > 0
+        ? modTexts.join("\n")
         : (isIt ? "(capacità da definire)" : "(capability to be defined)");
       const capLines = capText.split(/\n/).filter(Boolean);
 
