@@ -789,7 +789,9 @@ interface PriorityMatrixProps extends CommonProps {
   priorities: Priority[];
   dataNeeds: NeedItem[];
   needRelevance: Record<string, number>;
+  setNeedRelevance: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   needCriticality: Record<string, number>;
+  setNeedCriticality: React.Dispatch<React.SetStateAction<Record<string, number>>>;
   needIncluded: Record<string, boolean>;
   isNeedIncluded: (id: string) => boolean;
   focusMinR: number;
@@ -813,7 +815,7 @@ interface PriorityMatrixProps extends CommonProps {
 
 export function PriorityMatrixScreen({
   language, setLanguage, setScreen, reset, renderTrustBar,
-  priorities, dataNeeds, needRelevance, needCriticality, isNeedIncluded,
+  priorities, dataNeeds, needRelevance, setNeedRelevance, needCriticality, setNeedCriticality, isNeedIncluded,
   focusMinR, setFocusMinR, focusMinC, setFocusMinC,
   hoveredPriority, setHoveredPriority, pmMissionFilter, setPmMissionFilter,
   pmFromBriefing, setPmFromBriefing, pmSelected, setPmSelected,
@@ -832,8 +834,9 @@ export function PriorityMatrixScreen({
   },[]);
 
   // ── Use-case flow state ──────────────────────────────────────────────────
-  const [ucOpen,setUcOpen]=useState<string|null>(null);          // id del need attualmente in popup
-  const [ucDraft,setUcDraft]=useState<number[]>([]);             // selezione temporanea nel popup
+  const [ucOpen,setUcOpen]=useState<string|null>(null);
+  const [ucDraft,setUcDraft]=useState<number[]>([]);
+  const [not5WarnDismissed,setNot5WarnDismissed]=useState(false); // utente ha letto l'avviso
 
   // Tutti i need inclusi
   const allNeeds = dataNeeds.filter(n => isNeedIncluded(n.id)).map((n) => {
@@ -845,18 +848,27 @@ export function PriorityMatrixScreen({
     return {...n,rel,relNorm,crit,prioIdx,color:tierColor};
   });
 
-  // Need candidati (R>5 e C>5 con scenari), ordinati per C+R desc, a parità tiebreak hash stabile
+  // Tutti i candidati nel quadrante R>5 C>5 con scenari (senza cap)
+  const allHighNeeds = allNeeds.filter(n => n.relNorm > 5 && n.crit > 5 && (USE_CASE_SCENARIOS[n.id]?.length ?? 0) > 0);
+  const highCount = allHighNeeds.length; // numero effettivo nel quadrante
+
+  // Need candidati (R>5 e C>5 con scenari), ordinati per C+R desc, a parità tiebreak hash stabile, cap 5
   const ucNeeds = React.useMemo(()=>{
     const candidates = allNeeds.filter(n => n.relNorm > 5 && n.crit > 5 && (USE_CASE_SCENARIOS[n.id]?.length ?? 0) > 0);
-    // hash deterministico per tiebreak stabile (non cambia ad ogni render)
     const h=(s:string)=>s.split("").reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,0);
     candidates.sort((a,b)=>{
       const diff=(b.relNorm+b.crit)-(a.relNorm+a.crit);
-      return diff!==0 ? diff : h(a.id)-h(b.id); // tiebreak deterministico ≈ pseudo-random
+      return diff!==0 ? diff : h(a.id)-h(b.id);
     });
-    return candidates.slice(0,5); // massimo 5 nel flusso freccia
+    return candidates.slice(0,5);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[dataNeeds,needRelevance,needCriticality]);
+
+  // Il popup "non-5" deve comparire se highCount ≠ 5 e non è stato dismesso dall'utente per questa configurazione
+  // Si rireapre automaticamente se il count cambia di nuovo
+  const showNot5Warn = highCount !== 5 && !not5WarnDismissed;
+  // Reset del dismiss quando il conteggio cambia
+  React.useEffect(()=>{ setNot5WarnDismissed(false); },[highCount]);
 
   // Prossimo need (tra i top-5) senza selezione → target freccia
   const nextUcNeed = ucNeeds.find(n => !(ucSelections[n.id]?.length));
@@ -899,6 +911,31 @@ export function PriorityMatrixScreen({
 
   return <main className="pmScreen" style={{position:"relative"}}>
     {zoomWarnOpen&&<div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setZoomWarnOpen(false)}><div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"14px",padding:"28px 32px",maxWidth:"380px",width:"90vw",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.6)"}} onClick={e=>e.stopPropagation()}><p style={{margin:"0 0 8px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4"}}>{isIt?"Attenzione":"Warning"}</p><p style={{margin:"0 0 20px",fontSize:"15px",color:"#e8f5ef",lineHeight:1.5}}>{isIt?"Il rapporto di visualizzazione è ottimizzato per questa schermata. Sei sicuro di voler cambiare lo zoom?":"The display ratio is optimised for this screen. Are you sure you want to change the zoom?"}</p><div style={{display:"flex",gap:"10px",justifyContent:"center"}}><button style={{padding:"8px 22px",borderRadius:"8px",border:"1px solid rgba(57,239,180,.35)",background:"transparent",color:"#39efb4",fontSize:"14px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setZoomWarnOpen(false)}>{isIt?"Annulla":"Cancel"}</button><button style={{padding:"8px 22px",borderRadius:"8px",border:"1px solid #c84040",background:"rgba(200,64,64,.12)",color:"#ff8080",fontSize:"14px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setZoomWarnOpen(false)}>{isIt?"Continua comunque":"Continue anyway"}</button></div></div></div>}
+    {/* ── Popup "non 5 elementi" ─────────────────────────────────────────── */}
+    {showNot5Warn&&<div style={{position:"fixed",inset:0,zIndex:19000,background:"rgba(4,12,10,.90)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{background:"#0d1f19",border:"1px solid rgba(253,224,71,.45)",borderRadius:"16px",padding:"36px 40px",maxWidth:"680px",width:"92vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)"}} onClick={e=>e.stopPropagation()}>
+        <p style={{margin:"0 0 6px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".12em",textTransform:"uppercase",color:"#fde047"}}>{isIt?"Attenzione — metodo a 5 priorità":"Warning — 5-priority method"}</p>
+        <p style={{margin:"0 0 18px",fontSize:"26px",fontWeight:700,color:"#e8f5ef",lineHeight:1.35}}>
+          {isIt
+            ? `Nel quadrante R>5 e C>5 sono presenti ${highCount} element${highCount===1?"o":"i"}, non 5.`
+            : `The R>5 and C>5 quadrant contains ${highCount} element${highCount===1?"":"s"}, not 5.`}
+        </p>
+        <p style={{margin:"0 0 24px",fontSize:"20px",color:"#7ecfb8",lineHeight:1.6}}>
+          {isIt
+            ? (highCount>5
+                ? "Il metodo prevede l'analisi di esattamente 5 elementi prioritari. Abbassa il valore R o C di qualche elemento per riportare il totale a 5."
+                : "Il metodo prevede l'analisi di esattamente 5 elementi prioritari. Alza il valore R o C di qualche elemento per raggiungere 5.")
+            : (highCount>5
+                ? "The method requires exactly 5 priority elements. Lower the R or C value of some elements to bring the total back to 5."
+                : "The method requires exactly 5 priority elements. Raise the R or C value of some elements to reach 5.")}
+        </p>
+        <div style={{display:"flex",justifyContent:"flex-end"}}>
+          <button style={{padding:"12px 28px",borderRadius:"8px",border:"1px solid rgba(253,224,71,.5)",background:"rgba(253,224,71,.12)",color:"#fde047",fontSize:"18px",fontWeight:700,cursor:"pointer"}} onClick={()=>setNot5WarnDismissed(true)}>
+            {isIt?"Ho capito, continuo a modificare →":"Got it, I'll keep editing →"}
+          </button>
+        </div>
+      </div>
+    </div>}
     <div style={{position:"fixed",top:0,left:0,right:0,height:"4px",background:"#3b82f4",zIndex:9999,pointerEvents:"none"}}/>
     <div style={{position:"fixed",bottom:0,left:0,right:0,height:"4px",background:"#39efb4",zIndex:9999,pointerEvents:"none"}}/>
     <header className="missionNav missionNavTrust">
@@ -979,7 +1016,7 @@ export function PriorityMatrixScreen({
           <text x={10} y={MATRIX_H/2} textAnchor="middle" fontSize="12" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3" transform={`rotate(-90,10,${MATRIX_H/2})`}>{isIt?"CRITICITÀ":"CRITICALITY"}</text>
           <rect x={toX(5.5)} y={0} width={PAD_L+MATRIX_W-toX(5.5)} height={MATRIX_H/2} fill="rgba(57,239,180,.04)"/>
           {(()=>{
-            const FONT=7.5; const LINE_H=9; const MAX_LINES=4;
+            const FONT=6; const LINE_H=7.5; const MAX_LINES=4;
             const CHAR_W=FONT*0.52; const PAD_X=6; const PAD_Y=4;
             const maxChars=Math.floor((MATRIX_W/9-PAD_X*2)/CHAR_W);
             const needMeta=allNeeds.map(n=>{
@@ -1107,8 +1144,19 @@ export function PriorityMatrixScreen({
           if(!need) return null;
           const scenarios = USE_CASE_SCENARIOS[ucOpen] ?? [];
           const canConfirm = ucDraft.length > 0;
+          // Stepper helper inline
+          const RVal = needRelevance[need.id] ?? need.relNorm;
+          const CVal = needCriticality[need.id] ?? need.crit;
+          const setR = (delta:number) => {
+            const next = Math.max(1, Math.min(10, RVal + delta));
+            setNeedRelevance(prev => ({...prev, [need.id]: next}));
+          };
+          const setC = (delta:number) => {
+            const next = Math.max(1, Math.min(10, CVal + delta));
+            setNeedCriticality(prev => ({...prev, [need.id]: next}));
+          };
           return <div style={{position:"fixed",inset:0,zIndex:20000,background:"rgba(4,12,10,.88)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={closeUcPopup}>
-            <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"16px",padding:"36px 40px",maxWidth:"860px",width:"94vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"16px",padding:"36px 40px",maxWidth:"1120px",width:"96vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)",maxHeight:"90vh",overflowY:"auto",display:"flex",flexDirection:"column"}} onClick={e=>e.stopPropagation()}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"12px",marginBottom:"6px"}}>
                 <div>
@@ -1119,31 +1167,57 @@ export function PriorityMatrixScreen({
                 </div>
                 <button style={{background:"transparent",border:"none",color:"#7a9b91",fontSize:"36px",cursor:"pointer",flexShrink:0,padding:"0 2px",lineHeight:1}} onClick={closeUcPopup}>✕</button>
               </div>
-              <div style={{display:"flex",gap:"10px",marginBottom:"20px"}}>
-                <span style={{padding:"4px 14px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"22px",fontFamily:"monospace",color:"#39efb4"}}>R{need.relNorm}</span>
-                <span style={{padding:"4px 14px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"22px",fontFamily:"monospace",color:"#39efb4"}}>C{need.crit}</span>
-              </div>
               {/* Instruction */}
-              <p style={{margin:"0 0 20px",fontSize:"26px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
+              <p style={{margin:"0 0 20px",fontSize:"22px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
                 {isIt
                   ? "Seleziona tutti gli use case che sono significativi nella tua realtà. Identificati con il ruolo se citato. Devi sceglierne almeno uno per continuare."
                   : "Select all use cases that are significant in your context. Identify with the role if mentioned. You must choose at least one to continue."}
               </p>
-              {/* Use case list */}
-              <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px"}}>
-                {scenarios.map((uc,i)=>{
-                  const checked = ucDraft.includes(i);
-                  return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
-                    <input type="checkbox" checked={checked} onChange={()=>{
-                      setUcDraft(prev=>prev.includes(i)?prev.filter(x=>x!==i):[...prev,i]);
-                    }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
-                    <span style={{fontSize:"26px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
-                  </label>;
-                })}
+              {/* Two-column body */}
+              <div style={{display:"flex",gap:"28px",flex:1,minHeight:0}}>
+                {/* Left: use case list */}
+                <div style={{flex:1,display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px",overflowY:"auto"}}>
+                  {scenarios.map((uc,i)=>{
+                    const checked = ucDraft.includes(i);
+                    return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
+                      <input type="checkbox" checked={checked} onChange={()=>{
+                        setUcDraft(prev=>prev.includes(i)?prev.filter(x=>x!==i):[...prev,i]);
+                      }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
+                      <span style={{fontSize:"22px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
+                    </label>;
+                  })}
+                </div>
+                {/* Right: R/C steppers */}
+                <div style={{width:"180px",flexShrink:0,display:"flex",flexDirection:"column",gap:"20px",alignItems:"center",paddingTop:"4px"}}>
+                  <p style={{margin:"0 0 4px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".1em",textTransform:"uppercase",color:"#39efb4",textAlign:"center"}}>{isIt?"Modifica pesi":"Edit weights"}</p>
+                  {/* R stepper */}
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px",padding:"16px 14px",borderRadius:"12px",background:"rgba(57,239,180,.06)",border:"1px solid rgba(57,239,180,.2)",width:"100%"}}>
+                    <span style={{fontSize:"13px",fontFamily:"monospace",color:"#7ecfb8",letterSpacing:".08em",textTransform:"uppercase"}}>{isIt?"Rilevanza":"Relevance"}</span>
+                    <button
+                      style={{background:"rgba(57,239,180,.12)",border:"1px solid rgba(57,239,180,.35)",borderRadius:"6px",color:"#39efb4",fontSize:"20px",cursor:RVal>=10?"not-allowed":"pointer",width:"48px",height:"36px",lineHeight:1,opacity:RVal>=10?0.35:1}}
+                      onClick={()=>setR(+1)} disabled={RVal>=10}>▲</button>
+                    <span style={{fontSize:"32px",fontWeight:700,color:"#39efb4",fontFamily:"monospace",fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>R{RVal}</span>
+                    <button
+                      style={{background:"rgba(57,239,180,.12)",border:"1px solid rgba(57,239,180,.35)",borderRadius:"6px",color:"#39efb4",fontSize:"20px",cursor:RVal<=1?"not-allowed":"pointer",width:"48px",height:"36px",lineHeight:1,opacity:RVal<=1?0.35:1}}
+                      onClick={()=>setR(-1)} disabled={RVal<=1}>▼</button>
+                  </div>
+                  {/* C stepper */}
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"6px",padding:"16px 14px",borderRadius:"12px",background:"rgba(57,239,180,.06)",border:"1px solid rgba(57,239,180,.2)",width:"100%"}}>
+                    <span style={{fontSize:"13px",fontFamily:"monospace",color:"#7ecfb8",letterSpacing:".08em",textTransform:"uppercase"}}>{isIt?"Criticità":"Criticality"}</span>
+                    <button
+                      style={{background:"rgba(57,239,180,.12)",border:"1px solid rgba(57,239,180,.35)",borderRadius:"6px",color:"#39efb4",fontSize:"20px",cursor:CVal>=10?"not-allowed":"pointer",width:"48px",height:"36px",lineHeight:1,opacity:CVal>=10?0.35:1}}
+                      onClick={()=>setC(+1)} disabled={CVal>=10}>▲</button>
+                    <span style={{fontSize:"32px",fontWeight:700,color:"#39efb4",fontFamily:"monospace",fontVariantNumeric:"tabular-nums",lineHeight:1.1}}>C{CVal}</span>
+                    <button
+                      style={{background:"rgba(57,239,180,.12)",border:"1px solid rgba(57,239,180,.35)",borderRadius:"6px",color:"#39efb4",fontSize:"20px",cursor:CVal<=1?"not-allowed":"pointer",width:"48px",height:"36px",lineHeight:1,opacity:CVal<=1?0.35:1}}
+                      onClick={()=>setC(-1)} disabled={CVal<=1}>▼</button>
+                  </div>
+                  <p style={{margin:0,fontSize:"11px",color:"#4a7a6a",textAlign:"center",lineHeight:1.4}}>{isIt?"Modifica i pesi direttamente qui per ribilanciare la matrice.":"Adjust weights here to rebalance the matrix."}</p>
+                </div>
               </div>
               {/* Footer */}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
-                <span style={{fontSize:"24px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",marginTop:"8px"}}>
+                <span style={{fontSize:"22px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
                   {ucDraft.length===0
                     ? (isIt?"Seleziona almeno uno scenario":"Select at least one scenario")
                     : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
@@ -1151,7 +1225,7 @@ export function PriorityMatrixScreen({
                 <button
                   disabled={!canConfirm}
                   onClick={closeUcPopup}
-                  style={{padding:"14px 32px",borderRadius:"8px",border:`1px solid ${canConfirm?"rgba(57,239,180,.5)":"rgba(57,239,180,.2)"}`,background:canConfirm?"rgba(57,239,180,.15)":"transparent",color:canConfirm?"#39efb4":"#5a9e88",fontSize:"28px",fontWeight:700,cursor:canConfirm?"pointer":"not-allowed",transition:"all .15s"}}>
+                  style={{padding:"14px 32px",borderRadius:"8px",border:`1px solid ${canConfirm?"rgba(57,239,180,.5)":"rgba(57,239,180,.2)"}`,background:canConfirm?"rgba(57,239,180,.15)":"transparent",color:canConfirm?"#39efb4":"#5a9e88",fontSize:"26px",fontWeight:700,cursor:canConfirm?"pointer":"not-allowed",transition:"all .15s"}}>
                   {isIt?"Conferma →":"Confirm →"}
                 </button>
               </div>
