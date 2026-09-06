@@ -547,32 +547,40 @@ function replaceSlide7Recommendations(
 }
 
 // ── Slide 6 needs list replacement ───────────────────────────────────────────
-// Replaces the txBody of shape id=15 (left column in slide6) with a numbered list.
-// Items sorted by R+C descending, top 10. Format: "N. label (R:x C:y)"
+// Left column (shape id=15): numbered list, max 10 items.
+// First 5 = quadrant R>5 AND C>5, sorted by R+C desc.
+// Remaining slots filled by other items sorted by R+C desc, up to total 10.
 function replaceSlide6NeedsList(
   xml: string,
   items: SummaryPptxData["critItems"],
   isIt: boolean
 ): string {
-  const top10 = [...items]
-    .sort((a, b) => (b.rel + b.crit) - (a.rel + a.crit))
-    .slice(0, 10);
+  const sorted = [...items].sort((a, b) => (b.rel + b.crit) - (a.rel + a.crit));
 
-  const RPR = `<a:rPr lang="it-IT" sz="1200" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-  const PPR = `<a:pPr marL="0" marR="0" indent="0"><a:lnSpc><a:spcPct val="110000"/></a:lnSpc><a:spcBef><a:spcPts val="200"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
+  // Top 5 from high quadrant (R>5 AND C>5)
+  const highQ = sorted.filter(n => n.rel > 5 && n.crit > 5).slice(0, 5);
+  const highQIds = new Set(highQ.map(n => n.needId ?? n.label));
 
-  const header = isIt ? "Esigenze per criticità + rilevanza:" : "Needs by criticality + relevance:";
+  // Fill remaining slots (up to 10 total) with the rest sorted by R+C desc
+  const others = sorted.filter(n => !highQIds.has(n.needId ?? n.label));
+  const list = [...highQ, ...others].slice(0, 10);
+
+  const RPR     = `<a:rPr lang="it-IT" sz="1200" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const RPR_HI  = `<a:rPr lang="it-IT" sz="1200" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const PPR     = `<a:pPr marL="0" marR="0" indent="0"><a:lnSpc><a:spcPct val="110000"/></a:lnSpc><a:spcBef><a:spcPts val="200"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
   const HDR_RPR = `<a:rPr lang="it-IT" sz="1200" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
   const HDR_PPR = `<a:pPr marL="0" marR="0" indent="0"><a:lnSpc><a:spcPct val="110000"/></a:lnSpc><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buNone/></a:pPr>`;
 
+  const header = isIt ? "Esigenze per criticità + rilevanza:" : "Needs by criticality + relevance:";
+
   const paras = [
-    // Header paragraph
     `<a:p>${HDR_PPR}<a:r>${HDR_RPR}<a:t>${escapeXml(header)}</a:t></a:r></a:p>`,
-    // One paragraph per need
-    ...top10.map((it, i) => {
+    ...list.map((it, i) => {
+      const isHigh = i < highQ.length;
       const score = it.rel + it.crit;
       const line = `${i + 1}. ${it.label}  (R:${it.rel} C:${it.crit} · ${score})`;
-      return `<a:p>${PPR}<a:r>${RPR}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`;
+      const rpr = isHigh ? RPR_HI : RPR;
+      return `<a:p>${PPR}<a:r>${rpr}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`;
     }),
   ].join("");
 
