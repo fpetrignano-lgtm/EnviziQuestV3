@@ -1110,14 +1110,21 @@ export function PriorityMatrixScreen({
         </svg>
         </div>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:"clamp(22px,1.9vw,26px)",color:"#5a9e88",lineHeight:1.45,maxWidth:"560px"}}>
-            {ucNeeds.length>0&&!allUcDone
+          <p style={{margin:0,fontSize:"clamp(20px,1.7vw,24px)",lineHeight:1.45,maxWidth:"560px",
+            color: highCount!==5 ? "#fde047" : "#5a9e88",
+            fontWeight: highCount!==5 ? 700 : 400,
+          }}>
+            {highCount!==5
               ? (isIt
-                  ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
-                  : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
-              : isIt
-                ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
-                : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face."
+                  ? `Il numero di elementi nel quadrante R>5 e C>5 è ${highCount}, non 5. Modifica i valori R o C per arrivare esattamente a 5 prima di procedere.`
+                  : `The number of elements in the R>5 and C>5 quadrant is ${highCount}, not 5. Adjust R or C values to reach exactly 5 before proceeding.`)
+              : ucNeeds.length>0&&!allUcDone
+                ? (isIt
+                    ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
+                    : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
+                : isIt
+                  ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
+                  : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face."
             }
           </p>
           {pmFromBriefing
