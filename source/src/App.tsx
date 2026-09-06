@@ -437,41 +437,63 @@ export default function Home(){
     return ()=>{};
   },[profile,saveBtnOpen,saveBtnName,questName]);
 
-  // Journey panel — ref stabili per evitare closure stale nel root separato
-  const journeyActionsRef=useRef({setJourneyOpen,setScreenState});
-  useEffect(()=>{journeyActionsRef.current={setJourneyOpen,setScreenState};},[setJourneyOpen,setScreenState]);
+  // Journey panel — DOM puro, niente React root separato → no closure stale
+  useEffect(()=>{
+    // Crea il container una volta sola
+    let panel=document.getElementById("envizi-journey-panel-ui");
+    if(!panel){
+      panel=document.createElement("div");
+      panel.id="envizi-journey-panel-ui";
+      panel.style.cssText="position:fixed;inset:0;z-index:199998;background:rgba(7,18,15,.88);display:none;align-items:flex-start;justify-content:flex-end;";
+      panel.innerHTML=`
+        <div id="envizi-journey-drawer" style="background:#0d1f19;border:1px solid rgba(57,239,180,.22);border-radius:0 0 0 14px;padding:16px 0;width:320px;height:100vh;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,.5);">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0 18px 8px;">
+            <span style="font-size:11px;font-family:var(--font-geist-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#39efb4;opacity:.7;">Journey</span>
+            <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:16px;">✕</button>
+          </div>
+          <div id="envizi-journey-list"></div>
+        </div>`;
+      document.body.appendChild(panel);
+    }
+    return ()=>{};
+  },[]);
 
   useEffect(()=>{
-    let container=document.getElementById("envizi-journey-panel");
-    if(!container){
-      container=document.createElement("div");
-      container.id="envizi-journey-panel";
-      document.body.appendChild(container);
+    const panel=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
+    if(!panel) return;
+    // mostra/nascondi
+    panel.style.display=journeyOpen?"flex":"none";
+    if(!journeyOpen) return;
+    // ricostruisci lista con screen e funzioni correnti
+    const list=document.getElementById("envizi-journey-list");
+    if(list){
+      list.innerHTML="";
+      ALL_SCREENS.forEach((s,i)=>{
+        const btn=document.createElement("button");
+        btn.style.cssText=`display:flex;align-items:center;gap:10px;width:100%;padding:7px 18px;background:none;border:none;cursor:pointer;text-align:left;color:${s===screen?"#39efb4":"#b5c9c1"};font-family:var(--font-geist-mono,monospace);font-size:12px;letter-spacing:.04em;border-left:${s===screen?"3px solid #39efb4":"3px solid transparent"};`;
+        btn.innerHTML=`<span style="opacity:.5;min-width:22px;">${String(i+1).padStart(2,"0")}</span><span>${s}</span>`;
+        btn.addEventListener("click",()=>{
+          const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
+          if(p) p.style.display="none";
+          setJourneyOpen(false);
+          setScreenState(s);
+        });
+        list.appendChild(btn);
+      });
     }
-    const root=(container as any).__journeyRoot||(()=>{
-      const r=ReactDOM.createRoot(container!);
-      (container as any).__journeyRoot=r;
-      return r;
-    })();
-    if(!journeyOpen){root.render(<></>);return;}
-    const close=()=>journeyActionsRef.current.setJourneyOpen(false);
-    const go=(s:Screen)=>{journeyActionsRef.current.setJourneyOpen(false);journeyActionsRef.current.setScreenState(s);};
-    root.render(
-      <div style={{position:"fixed",inset:0,zIndex:199998,background:"rgba(7,18,15,.88)",display:"flex",alignItems:"flex-start",justifyContent:"flex-end"}} onClick={close}>
-        <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.22)",borderRadius:"0 0 0 14px",padding:"16px 0",width:"320px",height:"100vh",overflowY:"auto",boxShadow:"-8px 0 40px rgba(0,0,0,.5)"}} onClick={e=>e.stopPropagation()}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 18px 8px"}}>
-            <span style={{fontSize:"11px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4",opacity:.7}}>Journey</span>
-            <button style={{background:"none",border:"none",color:"#39efb4",cursor:"pointer",fontSize:"16px"}} onClick={close}>✕</button>
-          </div>
-          {ALL_SCREENS.map((s,i)=>(
-            <button key={s} onClick={()=>go(s)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"7px 18px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:s===screen?"#39efb4":"#b5c9c1",fontFamily:"var(--font-geist-mono,monospace)",fontSize:"12px",letterSpacing:".04em",borderLeft:s===screen?"3px solid #39efb4":"3px solid transparent",transition:".1s"}}>
-              <span style={{opacity:.5,minWidth:"22px"}}>{String(i+1).padStart(2,"0")}</span>
-              <span>{s}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
+    // backdrop click chiude
+    const onBackdrop=(e:MouseEvent)=>{
+      const drawer=document.getElementById("envizi-journey-drawer");
+      if(drawer&&!drawer.contains(e.target as Node)){setJourneyOpen(false);}
+    };
+    const closeBtn=document.getElementById("envizi-journey-close");
+    const onClose=()=>setJourneyOpen(false);
+    panel.addEventListener("click",onBackdrop);
+    closeBtn?.addEventListener("click",onClose);
+    return ()=>{
+      panel.removeEventListener("click",onBackdrop);
+      closeBtn?.removeEventListener("click",onClose);
+    };
   },[journeyOpen,screen]);
 
   // Rimuovi overlay quando il profilo viene rimosso (reset)
