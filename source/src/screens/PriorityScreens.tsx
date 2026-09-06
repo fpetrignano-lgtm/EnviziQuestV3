@@ -834,9 +834,8 @@ export function PriorityMatrixScreen({
   // ── Use-case flow state ──────────────────────────────────────────────────
   const [ucOpen,setUcOpen]=useState<string|null>(null);          // id del need attualmente in popup
   const [ucDraft,setUcDraft]=useState<number[]>([]);             // selezione temporanea nel popup
-  const [ucArrow,setUcArrow]=useState(true);                     // mostra l'animazione freccia
 
-  // Tutti i need con R>5 e C>5 ordinati per C+R decrescente (= ordine di intervento)
+  // Tutti i need inclusi
   const allNeeds = dataNeeds.filter(n => isNeedIncluded(n.id)).map((n) => {
     const prioIdx = priorities.indexOf(n.priority);
     const rel = Math.min(needRelevance[n.id]??5,10);
@@ -846,15 +845,23 @@ export function PriorityMatrixScreen({
     return {...n,rel,relNorm,crit,prioIdx,color:tierColor};
   });
 
-  // Need che richiedono compilazione use-case (R>5 e C>5, con scenari disponibili)
-  const ucNeeds = [...allNeeds]
-    .filter(n => n.relNorm > 5 && n.crit > 5 && (USE_CASE_SCENARIOS[n.id]?.length ?? 0) > 0)
-    .sort((a,b) => (b.relNorm+b.crit) - (a.relNorm+a.crit));
+  // Need candidati (R>5 e C>5 con scenari), ordinati per C+R desc, a parità tiebreak hash stabile
+  const ucNeeds = React.useMemo(()=>{
+    const candidates = allNeeds.filter(n => n.relNorm > 5 && n.crit > 5 && (USE_CASE_SCENARIOS[n.id]?.length ?? 0) > 0);
+    // hash deterministico per tiebreak stabile (non cambia ad ogni render)
+    const h=(s:string)=>s.split("").reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,0);
+    candidates.sort((a,b)=>{
+      const diff=(b.relNorm+b.crit)-(a.relNorm+a.crit);
+      return diff!==0 ? diff : h(a.id)-h(b.id); // tiebreak deterministico ≈ pseudo-random
+    });
+    return candidates.slice(0,5); // massimo 5 nel flusso freccia
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[dataNeeds,needRelevance,needCriticality]);
 
-  // Il prossimo need senza selezione
+  // Prossimo need (tra i top-5) senza selezione → target freccia
   const nextUcNeed = ucNeeds.find(n => !(ucSelections[n.id]?.length));
 
-  // Tutti compilati → abilita il pulsante avanti
+  // Tutti i top-5 compilati → abilita pulsante avanti
   const allUcDone = ucNeeds.length === 0 || ucNeeds.every(n => (ucSelections[n.id]?.length ?? 0) > 0);
 
   // Apri popup per un need
@@ -887,7 +894,7 @@ export function PriorityMatrixScreen({
   const vbW = zoomF>1?(PAD_L+MATRIX_W)-vbX:VW;
   const vbH = zoomF>1?(toY(zoomF)+PAD_B)-vbY:VH;
 
-  // Need attivo (quello su cui punta la freccia = nextUcNeed)
+  // Need attivo (quello su cui punta la freccia = prossimo dei top-5 non compilato)
   const arrowTargetId = nextUcNeed?.id ?? null;
 
   return <main className="pmScreen" style={{position:"relative"}}>
@@ -1024,12 +1031,20 @@ export function PriorityMatrixScreen({
                 {isDone&&isHigh&&<text x={lx+bw/2-2} y={ly-bh/2+8} fontSize="8" fill="#39efb4" fontFamily="monospace" fontWeight="900" textAnchor="end" opacity="1">✓</text>}
                 <text x={lx} y={ly+bh/2-3} fontSize="7" fill={boxStrokeColor} fontFamily="monospace" fontWeight="700" opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
                 {/* Freccia animata punta al riquadro target */}
-                {isUcTarget&&ucArrow&&<g>
-                  <style>{`@keyframes pmArrowBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}`}</style>
-                  <g style={{animation:"pmArrowBounce 0.9s ease-in-out infinite",transformOrigin:`${lx}px ${ly-bh/2-14}px`}}>
-                    <text x={lx} y={ly-bh/2-5} textAnchor="middle" fontSize="14" fill="#fde047" fontFamily="monospace" fontWeight="900">▼</text>
-                  </g>
-                </g>}
+                {isUcTarget&&(()=>{
+                  const stepNum = ucNeeds.findIndex(x=>x.id===n.id)+1;
+                  const total = ucNeeds.length;
+                  return <g>
+                    <style>{`@keyframes pmArrowBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}`}</style>
+                    {/* badge step N/total */}
+                    <rect x={lx-18} y={ly-bh/2-34} width={36} height={14} rx="4" fill="rgba(253,224,71,.18)" stroke="rgba(253,224,71,.55)" strokeWidth="0.8"/>
+                    <text x={lx} y={ly-bh/2-24} textAnchor="middle" fontSize="7.5" fill="#fde047" fontFamily="monospace" fontWeight="700">{stepNum}/{total}</text>
+                    {/* freccia rimbalzante */}
+                    <g style={{animation:"pmArrowBounce 0.9s ease-in-out infinite",transformOrigin:`${lx}px ${ly-bh/2-16}px`}}>
+                      <text x={lx} y={ly-bh/2-8} textAnchor="middle" fontSize="16" fill="#fde047" fontFamily="monospace" fontWeight="900">▼</text>
+                    </g>
+                  </g>;
+                })()}
               </g>;
             });
           })()}
