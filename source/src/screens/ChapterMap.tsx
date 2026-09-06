@@ -28,9 +28,11 @@ interface Props extends CommonProps {
   missionOrder: number[];
   missionOutcomes: Record<number, string>;
   trustScore: number;
+  companyDone?: boolean;
+  dataDone?: boolean;
 }
 
-export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder, missionOutcomes, trustScore }: Props) {
+export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder, missionOutcomes, trustScore, companyDone, dataDone }: Props) {
   const isIt = language === "it";
   const [zoomWarnOpen,setZoomWarnOpen]=useState(false);
   useEffect(()=>{
@@ -43,17 +45,57 @@ export function ChapterMap({ language, profile, setLanguage, setScreen, reset, r
     return ()=>window.removeEventListener("keydown",handler);
   },[]);
 
-  // Sfide nell'ordine corretto: il routing segue la posizione mostrata nell'indice.
-  const missionSections = missionOrder.map((mi, pos) => ({
-    num: `M${pos + 1}`,
-    labelIt: MISSION_DATA[mi].labelIt,
-    labelEn: MISSION_DATA[mi].labelEn,
-    subIt: MISSION_DATA[mi].subIt,
-    subEn: MISSION_DATA[mi].subEn,
-    screen: `challengeSeparator${pos + 1}` as Screen,
-  }));
+  // Stato per Sezione ② (Obiettivi della tua azienda)
+  const isCompanyCompleted = !!companyDone;
+  const isCompanyInProgress = !isCompanyCompleted; // Se non ancora completata, è il primo step attivo della roadmap
+  const companyStatusType: "completed" | "inProgress" | "notStarted" = isCompanyCompleted ? "completed" : "inProgress";
+  const companyStatusLabel = isCompanyCompleted ? (isIt ? "Completata" : "Completed") : (isIt ? "In corso" : "In progress");
 
-  const allSections = [...FIXED_TOP, ...missionSections, ...FIXED_BOTTOM];
+  // Stato per Sezione ③ (Sfide di dati)
+  const isDataCompleted = !!dataDone;
+  const isDataInProgress = !isDataCompleted && isCompanyCompleted;
+  const dataStatusType: "completed" | "inProgress" | "notStarted" = isDataCompleted ? "completed" : isDataInProgress ? "inProgress" : "notStarted";
+  const dataStatusLabel = isDataCompleted ? (isIt ? "Completata" : "Completed") : isDataInProgress ? (isIt ? "In corso" : "In progress") : (isIt ? "Non iniziata" : "Not started");
+
+  const fixedTopSections = [
+    { num: "①", labelIt: "Introduzione",               labelEn: "Introduction",              subIt: "Come funziona il Quest",                    subEn: "How the Quest works",                      screen: "sectionIntro1" as Screen },
+    { num: "②", labelIt: "Obiettivi della tua azienda", labelEn: "Your company's objectives", subIt: "Profilo azienda e priorità ESG",             subEn: "Company profile and ESG priorities",       screen: "sectionIntro2" as Screen, statusType: companyStatusType, statusLabel: companyStatusLabel },
+    { num: "③", labelIt: "Sfide di dati",               labelEn: "Data challenges",           subIt: "Esigenze, criticità e matrice di priorità",  subEn: "Needs, criticalities and priority matrix", screen: "sectionIntro3" as Screen, statusType: dataStatusType, statusLabel: dataStatusLabel },
+  ];
+
+  // Sfide nell'ordine corretto: il routing segue la posizione mostrata nell'indice.
+  const firstUncompletedIndex = missionOrder.findIndex(idx => missionOutcomes[idx] == null);
+  const hasAnyCompleted = Object.keys(missionOutcomes).length > 0;
+
+  const missionSections = missionOrder.map((mi, pos) => {
+    const isCompleted = missionOutcomes[mi] != null;
+    // Se la sezione dati è completata, la prima missione non completata è "In corso", altrimenti "Non iniziata" (o in corso se si è già partiti con le missioni)
+    const isInProgress = !isCompleted && ((hasAnyCompleted || isDataCompleted) ? pos === firstUncompletedIndex : false);
+
+    let statusType: "completed" | "inProgress" | "notStarted" = "notStarted";
+    let statusLabel = isIt ? "Non iniziata" : "Not started";
+
+    if (isCompleted) {
+      statusType = "completed";
+      statusLabel = isIt ? "Completata" : "Completed";
+    } else if (isInProgress) {
+      statusType = "inProgress";
+      statusLabel = isIt ? "In corso" : "In progress";
+    }
+
+    return {
+      num: `M${pos + 1}`,
+      labelIt: MISSION_DATA[mi].labelIt,
+      labelEn: MISSION_DATA[mi].labelEn,
+      subIt: MISSION_DATA[mi].subIt,
+      subEn: MISSION_DATA[mi].subEn,
+      screen: `challengeSeparator${pos + 1}` as Screen,
+      statusType,
+      statusLabel,
+    };
+  });
+
+  const allSections = [...fixedTopSections, ...missionSections, ...FIXED_BOTTOM];
 
   return (
     <main style={{ display: "flex", flexDirection: "column", height: "100dvh", background: "var(--bg)", overflow: "hidden", position: "relative" }}>
@@ -69,10 +111,10 @@ export function ChapterMap({ language, profile, setLanguage, setScreen, reset, r
       </div>}
       <div style={{ position: "fixed", top: 0, left: 0, right: 0, height: "4px", background: "#3b82f4", zIndex: 9999, pointerEvents: "none" }}/>
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, height: "4px", background: "#39efb4", zIndex: 9999, pointerEvents: "none" }}/>
-      <header className="missionNav missionNavTrust">
+      <header className={Object.keys(missionOutcomes).length > 0 ? "missionNav missionNavTrust" : "missionNav"}>
         <button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
         <div className="missionProgress"><span className="activeDot"/> {isIt ? "LA TUA ESPERIENZA" : "YOUR EXPERIENCE"}</div>
-        {renderTrustBar()}
+        {Object.keys(missionOutcomes).length > 0 && renderTrustBar()}
         <button className="langMini" onClick={() => setLanguage(language === "it" ? "en" : "it")}>{language === "it" ? "EN" : "IT"}</button>
       </header>
 
@@ -109,23 +151,61 @@ export function ChapterMap({ language, profile, setLanguage, setScreen, reset, r
 
           {/* griglia sezioni — 5 righe × 2 colonne, occupa tutto lo spazio */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "repeat(5, 1fr)", gap: "5px", flex: 1, minHeight: 0 }}>
-            {allSections.map((s) => (
-              <button
-                key={s.screen}
-                onClick={() => setScreen(s.screen)}
-                style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--surface,#1a1a2e)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "10px", padding: "6px 12px", cursor: "pointer", textAlign: "left", transition: "border-color .15s", color: "inherit", overflow: "hidden", minWidth: 0 }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "#39efb4")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.1)")}
-              >
-                <span style={{ minWidth: "36px", height: "36px", borderRadius: "50%", border: "2px solid #39efb4", background: "transparent", color: "#39efb4", fontWeight: 800, fontSize: "clamp(12px,1.2vw,18px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  {s.num}
-                </span>
-                <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0 }}>
-                  <span style={{ fontWeight: 700, fontSize: "clamp(24px,2.175vw,31.5px)", lineHeight: 1.55, color: "#b5c9c1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? s.labelIt : s.labelEn}</span>
-                  <span style={{ fontSize: "clamp(17.3px,1.566vw,22.7px)", color: "#b5c9c1", lineHeight: 1.55, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? s.subIt : s.subEn}</span>
-                </div>
-              </button>
-            ))}
+            {allSections.map((s) => {
+              const item = s as {
+                num: string;
+                labelIt: string;
+                labelEn: string;
+                subIt: string;
+                subEn: string;
+                screen: Screen;
+                statusType?: "completed" | "inProgress" | "notStarted";
+                statusLabel?: string;
+              };
+
+              let badgeBg = "rgba(255,255,255,.06)";
+              let badgeBorder = "rgba(255,255,255,.12)";
+              let badgeColor = "#7a9b91";
+              let badgeDot = "#7a9b91";
+
+              if (item.statusType === "completed") {
+                badgeBg = "rgba(57,239,180,.12)";
+                badgeBorder = "rgba(57,239,180,.35)";
+                badgeColor = "#39efb4";
+                badgeDot = "#39efb4";
+              } else if (item.statusType === "inProgress") {
+                badgeBg = "rgba(125,211,252,.12)";
+                badgeBorder = "rgba(125,211,252,.35)";
+                badgeColor = "#7dd3fc";
+                badgeDot = "#7dd3fc";
+              }
+
+              return (
+                <button
+                  key={item.screen}
+                  onClick={() => setScreen(item.screen)}
+                  style={{ display: "flex", alignItems: "center", gap: "10px", background: "var(--surface,#1a1a2e)", border: "1px solid rgba(255,255,255,.1)", borderRadius: "10px", padding: "6px 12px", cursor: "pointer", textAlign: "left", transition: "border-color .15s", color: "inherit", overflow: "hidden", minWidth: 0, position: "relative" }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#39efb4")}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,.1)")}
+                >
+                  <span style={{ minWidth: "36px", height: "36px", borderRadius: "50%", border: `2px solid ${item.statusType === "completed" ? "#39efb4" : item.statusType === "inProgress" ? "#7dd3fc" : "rgba(57,239,180,.6)"}`, background: "transparent", color: item.statusType === "inProgress" ? "#7dd3fc" : "#39efb4", fontWeight: 800, fontSize: "clamp(12px,1.2vw,18px)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {item.num}
+                  </span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1px", minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px" }}>
+                      <span style={{ fontWeight: 700, fontSize: "clamp(20px,1.8vw,26px)", lineHeight: 1.3, color: "#b5c9c1", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? item.labelIt : item.labelEn}</span>
+                      {item.statusLabel && (
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "2px 7px", borderRadius: "999px", background: badgeBg, border: `1px solid ${badgeBorder}`, color: badgeColor, fontSize: "11px", fontWeight: 600, fontFamily: "var(--font-geist-mono,monospace)", textTransform: "uppercase", letterSpacing: ".04em", flexShrink: 0 }}>
+                          <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: badgeDot }} />
+                          {item.statusLabel}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: "clamp(13px,1.15vw,16px)", color: "#7a9b91", lineHeight: 1.35, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{isIt ? item.subIt : item.subEn}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           <div style={{ display: "flex", justifyContent: "center", gap: "10px", paddingBottom: "4px", flexShrink: 0 }}>
