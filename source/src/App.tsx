@@ -491,6 +491,9 @@ export default function Home(){
 
   useEffect(()=>{
     // Crea il container una volta sola
+    // Rimuovi panel vecchio se esiste (forza ricreazione dopo aggiornamenti)
+    const old=document.getElementById("envizi-journey-panel-ui");
+    if(old) old.remove();
     let panel=document.getElementById("envizi-journey-panel-ui");
     if(!panel){
       panel=document.createElement("div");
