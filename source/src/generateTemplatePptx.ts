@@ -1208,6 +1208,37 @@ async function appendReportFindings(
         `<p:txBody>${dxTxBody}</p:txBody></p:sp>`;
       slideXml = slideXml.replace("</p:spTree>", dxShape + "</p:spTree>");
 
+      // ── Icona obiettivo in alto a destra ───────────────────────────────────────
+      const ICON_MAP: Record<string, string> = {
+        credit:     "icon-credito.png",
+        compliance: "icon-compliance.png",
+        customers:  "icon-clienti.png",
+        efficiency: "icon-energia.png",
+        supply:     "icon-supply.png",
+        reputation: "icon-reputazione.png",
+      };
+      const iconFile = need ? ICON_MAP[need.priority] : undefined;
+      if (iconFile) {
+        const mediaKey = `ppt/media/${iconFile}`;
+        if (!mainZip.file(mediaKey)) {
+          try {
+            const iconRes = await fetch(`./${iconFile}?v=${Date.now()}`);
+            if (iconRes.ok) mainZip.file(mediaKey, new Uint8Array(await iconRes.arrayBuffer()));
+          } catch { /* salta */ }
+        }
+        const iconRid = `rIcon_${tplSlideIdx}`;
+        slideRels = slideRels.replace(
+          "</Relationships>",
+          `<Relationship Id="${iconRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${iconFile}"/></Relationships>`
+        );
+        // Posizione: in alto a destra — x=10500000, y=200000, cx=1500000, cy=1500000
+        const iconPic =
+          `<p:pic><p:nvPicPr><p:cNvPr id="602" name="icon_obj_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
+          `<p:blipFill><a:blip r:embed="${iconRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
+          `<p:spPr><a:xfrm><a:off x="10500000" y="200000"/><a:ext cx="1500000" cy="1500000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+        slideXml = slideXml.replace("</p:spTree>", iconPic + "</p:spTree>");
+      }
+
     } else {
       // Slide conclusioni
       const summary = buildFindingsSummary(data, isIt, companyName);
