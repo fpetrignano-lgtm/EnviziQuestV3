@@ -1057,10 +1057,7 @@ export function PriorityMatrixScreen({
               const boxStrokeW = isUcTarget ? 2.5 : (isTransversal&&pmMissionFilter!==null?1.4:0.8);
               const boxStrokeColor = isHigh ? (isDone ? "#39efb4" : isUcTarget ? "#fde047" : n.color) : n.color;
               return <g key={n.id} className="pmDot" opacity={visible?1:0.1}
-                onClick={()=>{
-                  if(isHigh) openUcPopup(n.id);
-                  else setPmSelected({id:n.id,label:n.label,rel:n.relNorm,crit:n.crit,color:n.color});
-                }} style={{cursor:"pointer"}}>
+                onClick={()=>openUcPopup(n.id)} style={{cursor:"pointer"}}>
                 <rect x={lx-bw/2} y={ly-bh/2} width={bw} height={bh} rx="3" fill="#07110e" fillOpacity="0.82" stroke={boxStrokeColor} strokeWidth={boxStrokeW} strokeOpacity="0.9" strokeDasharray={boxStrokeDash}/>
                 <text fontFamily="sans-serif" fontSize={FONT} fill={boxStrokeColor} fontWeight="600">
                   {vis.map((line,i)=><tspan key={i} x={lx} y={ly-bh/2+PAD_Y+(i+0.85)*LINE_H} textAnchor="middle">{line}</tspan>)}
@@ -1144,7 +1141,8 @@ export function PriorityMatrixScreen({
           const need = allNeeds.find(n=>n.id===ucOpen);
           if(!need) return null;
           const scenarios = USE_CASE_SCENARIOS[ucOpen] ?? [];
-          const canConfirm = ucDraft.length > 0;
+          const hasScenarios = scenarios.length > 0;
+          const canConfirm = !hasScenarios || ucDraft.length > 0;
           // Stepper helper inline
           const RVal = needRelevance[need.id] ?? need.relNorm;
           const CVal = needCriticality[need.id] ?? need.crit;
@@ -1168,17 +1166,17 @@ export function PriorityMatrixScreen({
                 </div>
                 <button style={{background:"transparent",border:"none",color:"#7a9b91",fontSize:"36px",cursor:"pointer",flexShrink:0,padding:"0 2px",lineHeight:1}} onClick={closeUcPopup}>✕</button>
               </div>
-              {/* Instruction */}
-              <p style={{margin:"0 0 20px",fontSize:"22px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
+              {/* Instruction — solo se ci sono scenari */}
+              {hasScenarios&&<p style={{margin:"0 0 20px",fontSize:"22px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
                 {isIt
                   ? "Seleziona tutti gli use case che sono significativi nella tua realtà. Identificati con il ruolo se citato. Devi sceglierne almeno uno per continuare."
                   : "Select all use cases that are significant in your context. Identify with the role if mentioned. You must choose at least one to continue."}
-              </p>
+              </p>}
               {/* Two-column body */}
               <div style={{display:"flex",gap:"28px",flex:1,minHeight:0}}>
-                {/* Left: use case list */}
+                {/* Left: use case list (o placeholder se vuoto) */}
                 <div style={{flex:1,display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px",overflowY:"auto"}}>
-                  {scenarios.map((uc,i)=>{
+                  {hasScenarios ? scenarios.map((uc,i)=>{
                     const checked = ucDraft.includes(i);
                     return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
                       <input type="checkbox" checked={checked} onChange={()=>{
@@ -1186,7 +1184,7 @@ export function PriorityMatrixScreen({
                       }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
                       <span style={{fontSize:"22px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
                     </label>;
-                  })}
+                  }) : <p style={{margin:"auto 0",fontSize:"18px",color:"#4a7a6a",fontStyle:"italic"}}>{isIt?"Nessuno scenario disponibile per questo elemento.":"No scenarios available for this element."}</p>}
                 </div>
                 {/* Right: R/C steppers */}
                 <div style={{width:"180px",flexShrink:0,display:"flex",flexDirection:"column",gap:"20px",alignItems:"center",paddingTop:"4px"}}>
@@ -1219,15 +1217,17 @@ export function PriorityMatrixScreen({
               {/* Footer */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",marginTop:"8px"}}>
                 <span style={{fontSize:"22px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
-                  {ucDraft.length===0
-                    ? (isIt?"Seleziona almeno uno scenario":"Select at least one scenario")
-                    : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
+                  {!hasScenarios
+                    ? ""
+                    : ucDraft.length===0
+                      ? (isIt?"Seleziona almeno uno scenario":"Select at least one scenario")
+                      : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
                 </span>
                 <button
                   disabled={!canConfirm}
                   onClick={closeUcPopup}
-                  style={{padding:"14px 32px",borderRadius:"8px",border:`1px solid ${canConfirm?"rgba(57,239,180,.5)":"rgba(57,239,180,.2)"}`,background:canConfirm?"rgba(57,239,180,.15)":"transparent",color:canConfirm?"#39efb4":"#5a9e88",fontSize:"26px",fontWeight:700,cursor:canConfirm?"pointer":"not-allowed",transition:"all .15s"}}>
-                  {isIt?"Conferma →":"Confirm →"}
+                  style={{padding:"14px 32px",borderRadius:"8px",border:"1px solid rgba(57,239,180,.5)",background:"rgba(57,239,180,.15)",color:"#39efb4",fontSize:"26px",fontWeight:700,cursor:"pointer",transition:"all .15s",opacity:canConfirm?1:0.35}}>
+                  {!hasScenarios ? (isIt?"Chiudi":"Close") : (isIt?"Conferma →":"Confirm →")}
                 </button>
               </div>
             </div>
