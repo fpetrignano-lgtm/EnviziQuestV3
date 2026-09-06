@@ -1069,42 +1069,42 @@ export function PriorityMatrixScreen({
           const scenarios = USE_CASE_SCENARIOS[ucOpen] ?? [];
           const canConfirm = ucDraft.length > 0;
           return <div style={{position:"fixed",inset:0,zIndex:20000,background:"rgba(4,12,10,.88)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={closeUcPopup}>
-            <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"16px",padding:"28px 30px",maxWidth:"620px",width:"94vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+            <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.3)",borderRadius:"16px",padding:"36px 40px",maxWidth:"860px",width:"94vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)",maxHeight:"90vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
               {/* Header */}
               <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"12px",marginBottom:"6px"}}>
                 <div>
-                  <p style={{margin:"0 0 3px",fontSize:"11px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".12em",textTransform:"uppercase",color:need.color,opacity:.85}}>
+                  <p style={{margin:"0 0 3px",fontSize:"22px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".12em",textTransform:"uppercase",color:need.color,opacity:.85}}>
                     {t.priorityNames?.[need.priority] ?? need.priority}
                   </p>
-                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"#e8f5ef",lineHeight:1.4}}>{need.label}</p>
+                  <p style={{margin:0,fontSize:"30px",fontWeight:700,color:"#e8f5ef",lineHeight:1.4}}>{need.label}</p>
                 </div>
-                <button style={{background:"transparent",border:"none",color:"#7a9b91",fontSize:"18px",cursor:"pointer",flexShrink:0,padding:"0 2px",lineHeight:1}} onClick={closeUcPopup}>✕</button>
+                <button style={{background:"transparent",border:"none",color:"#7a9b91",fontSize:"36px",cursor:"pointer",flexShrink:0,padding:"0 2px",lineHeight:1}} onClick={closeUcPopup}>✕</button>
               </div>
-              <div style={{display:"flex",gap:"10px",marginBottom:"16px"}}>
-                <span style={{padding:"2px 8px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"11px",fontFamily:"monospace",color:"#39efb4"}}>R{need.relNorm}</span>
-                <span style={{padding:"2px 8px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"11px",fontFamily:"monospace",color:"#39efb4"}}>C{need.crit}</span>
+              <div style={{display:"flex",gap:"10px",marginBottom:"20px"}}>
+                <span style={{padding:"4px 14px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"22px",fontFamily:"monospace",color:"#39efb4"}}>R{need.relNorm}</span>
+                <span style={{padding:"4px 14px",borderRadius:"999px",background:"rgba(57,239,180,.1)",border:"1px solid rgba(57,239,180,.3)",fontSize:"22px",fontFamily:"monospace",color:"#39efb4"}}>C{need.crit}</span>
               </div>
               {/* Instruction */}
-              <p style={{margin:"0 0 14px",fontSize:"13px",color:"#7ecfb8",lineHeight:1.5,padding:"10px 12px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"3px solid rgba(57,239,180,.4)"}}>
+              <p style={{margin:"0 0 20px",fontSize:"26px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
                 {isIt
                   ? "Seleziona tutti gli use case in cui ti riconosci e che sono significativi nella tua realtà. Devi sceglierne almeno uno per continuare."
                   : "Select all use cases that apply to your situation and are significant in your context. You must choose at least one to continue."}
               </p>
               {/* Use case list */}
-              <div style={{display:"flex",flexDirection:"column",gap:"8px",marginBottom:"20px"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px"}}>
                 {scenarios.map((uc,i)=>{
                   const checked = ucDraft.includes(i);
-                  return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"12px",padding:"10px 14px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
+                  return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
                     <input type="checkbox" checked={checked} onChange={()=>{
                       setUcDraft(prev=>prev.includes(i)?prev.filter(x=>x!==i):[...prev,i]);
-                    }} style={{marginTop:"2px",width:"16px",height:"16px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
-                    <span style={{fontSize:"13px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
+                    }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
+                    <span style={{fontSize:"26px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
                   </label>;
                 })}
               </div>
               {/* Footer */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
-                <span style={{fontSize:"12px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
+                <span style={{fontSize:"24px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
                   {ucDraft.length===0
                     ? (isIt?"Seleziona almeno uno scenario":"Select at least one scenario")
                     : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
@@ -1112,7 +1112,7 @@ export function PriorityMatrixScreen({
                 <button
                   disabled={!canConfirm}
                   onClick={closeUcPopup}
-                  style={{padding:"10px 24px",borderRadius:"8px",border:`1px solid ${canConfirm?"rgba(57,239,180,.5)":"rgba(57,239,180,.2)"}`,background:canConfirm?"rgba(57,239,180,.15)":"transparent",color:canConfirm?"#39efb4":"#5a9e88",fontSize:"14px",fontWeight:700,cursor:canConfirm?"pointer":"not-allowed",transition:"all .15s"}}>
+                  style={{padding:"14px 32px",borderRadius:"8px",border:`1px solid ${canConfirm?"rgba(57,239,180,.5)":"rgba(57,239,180,.2)"}`,background:canConfirm?"rgba(57,239,180,.15)":"transparent",color:canConfirm?"#39efb4":"#5a9e88",fontSize:"28px",fontWeight:700,cursor:canConfirm?"pointer":"not-allowed",transition:"all .15s"}}>
                   {isIt?"Conferma →":"Confirm →"}
                 </button>
               </div>
