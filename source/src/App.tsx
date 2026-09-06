@@ -504,10 +504,11 @@ export default function Home(){
               <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;">✕</button>
             </div>
             <input id="envizi-journey-search" type="text" placeholder="Cerca per ID o titolo…" style="width:100%;box-sizing:border-box;background:rgba(57,239,180,.10);border:2px solid rgba(57,239,180,.6);border-radius:6px;padding:8px 12px;color:#e8f5ef;font-family:var(--font-geist-mono,monospace);font-size:12px;outline:none;box-shadow:0 0 0 3px rgba(57,239,180,.12);"/>
-            <div style="margin-top:6px;font-size:10px;font-family:var(--font-geist-mono,monospace);letter-spacing:.06em;line-height:1.8;">
-              <span style="color:rgba(57,239,180,.45);">⌘⇧J / Ctrl⇧J &nbsp;·&nbsp; apri/chiudi Journey</span><br/>
-              <span style="color:#39efb4;font-weight:600;">⌘⇧R / Ctrl⇧R &nbsp;·&nbsp; torna alla cover</span>
+            <div style="margin-top:14px;padding:12px 16px;background:rgba(57,239,180,.08);border:2px solid rgba(57,239,180,.55);border-radius:8px;box-shadow:0 0 0 3px rgba(57,239,180,.10);">
+              <div style="font-family:var(--font-geist-mono,monospace);font-size:22px;font-weight:700;color:#39efb4;letter-spacing:.08em;line-height:1.3;">⌘⇧R &nbsp;<span style="font-size:13px;opacity:.6;font-weight:400;">/ Ctrl⇧R</span></div>
+              <div style="margin-top:4px;font-family:var(--font-geist-mono,monospace);font-size:11px;color:rgba(57,239,180,.7);letter-spacing:.1em;text-transform:uppercase;">torna alla cover da qualsiasi schermata</div>
             </div>
+            <div style="margin-top:8px;font-size:10px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.35);letter-spacing:.06em;">⌘⇧J / Ctrl⇧J &nbsp;·&nbsp; apri/chiudi Journey</div>
           </div>
           <div style="padding:0 24px 32px;flex:1;">
             <table id="envizi-journey-table" style="width:100%;border-collapse:collapse;margin-top:8px;">
