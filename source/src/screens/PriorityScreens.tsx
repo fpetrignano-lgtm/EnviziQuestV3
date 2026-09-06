@@ -947,7 +947,7 @@ export function PriorityMatrixScreen({
           <span className="pmFocusHint">{isIt?"(1 = nessun filtro · 10 = solo il massimo)":"(1 = no filter · 10 = max only)"}</span>
         </div>
         {/* SVG wrapped in a relative container for the arrow overlay */}
-        <div style={{position:"relative"}}>
+        <div style={{position:"relative",width:"100%"}}>
         <svg className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{transition:"viewBox .35s"}}>
           {gridVals.map(v=><g key={v}>
             <line x1={toX(v)} y1={0} x2={toX(v)} y2={MATRIX_H} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
