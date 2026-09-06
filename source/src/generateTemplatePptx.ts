@@ -540,7 +540,7 @@ function replaceSlide7Recommendations(
     const firstMod = mods ? (mods.find(v => v.trim()) ?? "") : "";
     // Prendi solo la prima riga (riga "Moduli e funzionalità: ...")
     const descText = firstMod
-      ? firstMod.split("\n")[0]
+      ? firstMod.split("\\n")[0]
       : item ? `${item.priority}  ·  R:${item.rel} C:${item.crit}` : "";
     xml = replaceShapeText(xml, titleId, titleText);
     xml = replaceShapeText(xml, DESC_IDS[i], descText);
@@ -992,7 +992,7 @@ function buildFindingsSummary(
     .map(n => {
       const mods = SCENARIO_MODULES[n.needId ?? ""];
       const first = mods ? (mods.find(v => v.trim()) ?? "") : "";
-      return first ? first.split("\n")[0] : "";
+      return first ? first.split("\\n")[0] : "";
     })
     .filter(Boolean);
   const uniqueCaps = [...new Set(caps)].slice(0, 4);
@@ -1139,9 +1139,9 @@ async function appendReportFindings(
           ? [...new Set(needModules.filter(Boolean))]
           : [];
       const capText = modTexts.length > 0
-        ? modTexts.join("\n")
+        ? modTexts.join("\\n")
         : (isIt ? "(capacità da definire)" : "(capability to be defined)");
-      const capLines = capText.split(/\n/).filter(Boolean);
+      const capLines = capText.split(/\\n/).filter(Boolean);
 
       // Shorthand per costruire un run Calibri 16pt
       const rpr = `<a:rPr lang="it-IT" sz="1600" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;

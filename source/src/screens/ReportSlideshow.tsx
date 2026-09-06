@@ -504,7 +504,7 @@ function Slide6({ d }: { d: ReportData }) {
           {top7.map((item, i) => {
             const mods = item.needId ? SCENARIO_MODULES[item.needId] : undefined;
             const firstMod = mods ? (mods.find(v => v.trim()) ?? "") : "";
-            const capText = firstMod ? firstMod.split("\n")[0] : item.priority;
+            const capText = firstMod ? firstMod.split("\\n")[0] : item.priority;
             const cleanLabel = item.label.replace(/\s*\(.*?\)\s*$/, "").trimEnd();
             return (
               <div key={item.label} style={{
