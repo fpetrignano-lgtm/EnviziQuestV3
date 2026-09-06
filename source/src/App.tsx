@@ -437,21 +437,74 @@ export default function Home(){
     return ()=>{};
   },[profile,saveBtnOpen,saveBtnName,questName]);
 
-  // Journey panel — DOM puro, niente React root separato → no closure stale
+  // Journey panel — DOM puro, tabella con id/num/titolo/bottone vai
+  const JOURNEY_TITLES:Record<string,string>={
+    cover:"Start",welcome:"Benvenuto alla Envizi Quest",onboarding:"Ogni dato cambia la storia",
+    approach:"ESG · Persone e Dati",chapterMap:"La tua esperienza Envizi Quest",
+    sectionIntro1:"Il percorso Envizi Quest",questIntro:"Introduzione al Quest",
+    blank1:"Sintesi intermedia delle priorità",p10Slideshow:"Presentazione Envizi",
+    approachIntro:"Dalle priorità alle decisioni",approachReport:"Porta con te il risultato",
+    intro:"Guadagna la fiducia",separatorNext:"La Quest",
+    approachStepsCopy:"Parti dalle priorità di business",
+    sectionIntro2:"Obiettivi della tua azienda",companySetup:"Configura la tua azienda",
+    company:"La tua azienda",company2:"Strategia ESG",
+    sectionIntro3:"Sfide di dati",priorities:"Priorità ESG",
+    approachDataCopy:"Dagli obiettivi alle priorità",priorityData:"Esigenze gestione dati ESG",
+    priorityMatrix:"Rilevanza vs Criticità",ilTuoReport:"Il tuo report ESG",
+    reportSlideshow:"Report ESG",reportSlideshowPng:"Report ESG (PNG)",
+    chapterOneSummary:"La tua roadmap ESG",esgStrategist:"ESG Strategist sbloccato",
+    challengeSeparator1:"Sfida 1 · Data Foundation",missionCard1:"Mission 1 · Data Foundation",
+    introCopy:"Guadagna la fiducia",bridge:"Cinque decisioni. Una trasformazione.",
+    missions:"Da dove vuoi iniziare?",briefing:"Briefing missione",
+    missionIntro:"Dai dati invisibili alle decisioni",introCopy2:"Guadagna la fiducia",
+    asis:"La situazione attuale",compare:"Scegli la strada",
+    trust:"Costruisci la fiducia",tobe:"Il futuro con Envizi",
+    negative:"Scelta con impatto limitato",success:"Data Foundation pronta",
+    milestone:"Trusted ESG Data Manager",
+    dataFoundation:"Requisiti Data Foundation",dfConclusion:"Scelta Data Foundation",
+    challengeComplete1:"Sfida 1 completata",challengeSeparator2:"Sfida 2 · Reporting",
+    missionCard2:"Mission 2 · Reporting",energyFoundation:"Requisiti Energy Management",
+    energyConclusion:"Scelta Energy Management",challengeComplete2:"Sfida 2 completata",
+    challengeSeparator3:"Sfida 3 · Framework ESG",missionCard3:"Mission 3 · Framework",
+    supplyFoundation:"Requisiti Supply Chain",supplyConclusion:"Scelta Supply Chain",
+    challengeComplete3:"Sfida 3 completata",challengeSeparator4:"Sfida 4 · Supply Chain",
+    missionCard4:"Mission 4 · Supply Chain",planningFoundation:"Requisiti Net Zero",
+    planningConclusion:"Scelta Net Zero",challengeComplete4:"Sfida 4 completata",
+    challengeSeparator5:"Sfida 5 · Energia",missionCard5:"Mission 5 · Energia",
+    frameworkFoundation:"Requisiti Framework & Disclosure",frameworkConclusion:"Scelta Framework",
+    challengeComplete5:"Sfida 5 completata",challengeSeparator6:"Sfida 6 · Reporting",
+    missionCard6:"Mission 6 · Reporting",reportingFoundation:"Requisiti Reporting",
+    reportingConclusion:"Scelta Reporting",challengeComplete6:"Sfida 6 completata",
+    summary:"La tua roadmap ESG",sectionOutro:"Porta i risultati al livello successivo",
+    nextStep:"Porta i dati ESG al livello successivo",thankYou:"Grazie / Thank you"
+  };
+
   useEffect(()=>{
     // Crea il container una volta sola
     let panel=document.getElementById("envizi-journey-panel-ui");
     if(!panel){
       panel=document.createElement("div");
       panel.id="envizi-journey-panel-ui";
-      panel.style.cssText="position:fixed;inset:0;z-index:199998;background:rgba(7,18,15,.88);display:none;align-items:flex-start;justify-content:flex-end;";
+      panel.style.cssText="position:fixed;inset:0;z-index:199998;background:rgba(7,18,15,.92);display:none;align-items:flex-start;justify-content:center;padding-top:0;";
       panel.innerHTML=`
-        <div id="envizi-journey-drawer" style="background:#0d1f19;border:1px solid rgba(57,239,180,.22);border-radius:0 0 0 14px;padding:16px 0;width:320px;height:100vh;overflow-y:auto;box-shadow:-8px 0 40px rgba(0,0,0,.5);">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:0 18px 8px;">
-            <span style="font-size:11px;font-family:var(--font-geist-mono,monospace);letter-spacing:.14em;text-transform:uppercase;color:#39efb4;opacity:.7;">Journey</span>
-            <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:16px;">✕</button>
+        <div id="envizi-journey-drawer" style="background:#0d1f19;border:1px solid rgba(57,239,180,.22);width:100%;max-width:760px;height:100vh;overflow-y:auto;box-shadow:0 8px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 14px;border-bottom:1px solid rgba(57,239,180,.15);position:sticky;top:0;background:#0d1f19;z-index:1;">
+            <span style="font-size:11px;font-family:var(--font-geist-mono,monospace);letter-spacing:.18em;text-transform:uppercase;color:#39efb4;opacity:.8;">Journey — Mappa delle Slide</span>
+            <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;">✕</button>
           </div>
-          <div id="envizi-journey-list"></div>
+          <div style="padding:0 24px 32px;flex:1;">
+            <table id="envizi-journey-table" style="width:100%;border-collapse:collapse;margin-top:8px;">
+              <thead>
+                <tr style="border-bottom:1px solid rgba(57,239,180,.2);">
+                  <th style="padding:8px 10px;text-align:left;font-size:10px;font-family:var(--font-geist-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:#39efb4;opacity:.6;width:40px;">#</th>
+                  <th style="padding:8px 10px;text-align:left;font-size:10px;font-family:var(--font-geist-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:#39efb4;opacity:.6;width:180px;">ID Applicativo</th>
+                  <th style="padding:8px 10px;text-align:left;font-size:10px;font-family:var(--font-geist-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:#39efb4;opacity:.6;">Titolo</th>
+                  <th style="padding:8px 10px;text-align:right;font-size:10px;font-family:var(--font-geist-mono,monospace);letter-spacing:.12em;text-transform:uppercase;color:#39efb4;opacity:.6;width:80px;">Vai</th>
+                </tr>
+              </thead>
+              <tbody id="envizi-journey-tbody"></tbody>
+            </table>
+          </div>
         </div>`;
       document.body.appendChild(panel);
     }
@@ -461,24 +514,37 @@ export default function Home(){
   useEffect(()=>{
     const panel=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
     if(!panel) return;
-    // mostra/nascondi
     panel.style.display=journeyOpen?"flex":"none";
     if(!journeyOpen) return;
-    // ricostruisci lista con screen e funzioni correnti
-    const list=document.getElementById("envizi-journey-list");
-    if(list){
-      list.innerHTML="";
+    const tbody=document.getElementById("envizi-journey-tbody");
+    if(tbody){
+      tbody.innerHTML="";
       ALL_SCREENS.forEach((s,i)=>{
-        const btn=document.createElement("button");
-        btn.style.cssText=`display:flex;align-items:center;gap:10px;width:100%;padding:7px 18px;background:none;border:none;cursor:pointer;text-align:left;color:${s===screen?"#39efb4":"#b5c9c1"};font-family:var(--font-geist-mono,monospace);font-size:12px;letter-spacing:.04em;border-left:${s===screen?"3px solid #39efb4":"3px solid transparent"};`;
-        btn.innerHTML=`<span style="opacity:.5;min-width:22px;">${String(i+1).padStart(2,"0")}</span><span>${s}</span>`;
-        btn.addEventListener("click",()=>{
-          const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
-          if(p) p.style.display="none";
-          setJourneyOpen(false);
-          setScreenState(s);
-        });
-        list.appendChild(btn);
+        const isCurrent=s===screen;
+        const tr=document.createElement("tr");
+        tr.style.cssText=`border-bottom:1px solid rgba(57,239,180,.07);background:${isCurrent?"rgba(57,239,180,.06)":"transparent"};transition:.1s;`;
+        const title=JOURNEY_TITLES[s]||s;
+        tr.innerHTML=`
+          <td style="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.45);white-space:nowrap;">${String(i+1).padStart(2,"0")}</td>
+          <td style="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:${isCurrent?"#39efb4":"#6b8f80"};white-space:nowrap;">${s}</td>
+          <td style="padding:9px 10px;font-size:13px;color:${isCurrent?"#e8f5ef":"#b5c9c1"};font-weight:${isCurrent?"600":"400"};">${title}${isCurrent?' <span style="font-size:9px;font-family:var(--font-geist-mono,monospace);color:#39efb4;opacity:.7;margin-left:6px;vertical-align:middle;">← qui</span>':""}</td>
+          <td style="padding:9px 10px;text-align:right;">
+            <button data-screen="${s}" style="background:${isCurrent?"rgba(57,239,180,.18)":"rgba(57,239,180,.08)"};border:1px solid rgba(57,239,180,${isCurrent?".5":".2"});color:${isCurrent?"#39efb4":"#6b8f80"};font-family:var(--font-geist-mono,monospace);font-size:10px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;">VAI →</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+      // scroll alla riga corrente
+      const currentBtn=tbody.querySelector(`[data-screen="${screen}"]`) as HTMLElement|null;
+      currentBtn?.scrollIntoView({block:"center",behavior:"smooth"});
+      // click su bottoni VAI
+      tbody.addEventListener("click",(e)=>{
+        const btn=(e.target as HTMLElement).closest("[data-screen]") as HTMLElement|null;
+        if(!btn) return;
+        const target=btn.getAttribute("data-screen") as Screen;
+        const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
+        if(p) p.style.display="none";
+        setJourneyOpen(false);
+        setScreenState(target);
       });
     }
     // backdrop click chiude
