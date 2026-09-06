@@ -1176,50 +1176,6 @@ async function appendReportFindings(
         `$1${newTxBody}$2`
       );
 
-      // ── Immagine obiettivo in alto a destra ───────────────────────────────────
-      // Seleziona per parola chiave nel testo obLabel (es. "credito" → credito.png)
-      const OBJ_KEYWORDS: { key: string; file: string }[] = [
-        { key: "credito",    file: "obj-icon-credit.png" },
-        { key: "credit",     file: "obj-icon-credit.png" },
-        { key: "compliance", file: "obj-icon-compliance.png" },
-        { key: "reporting",  file: "obj-icon-compliance.png" },
-        { key: "clienti",    file: "obj-icon-customers.png" },
-        { key: "customer",   file: "obj-icon-customers.png" },
-        { key: "mercato",    file: "obj-icon-customers.png" },
-        { key: "efficien",   file: "obj-icon-efficiency.png" },
-        { key: "energia",    file: "obj-icon-efficiency.png" },
-        { key: "supply",     file: "obj-icon-supply.png" },
-        { key: "filiera",    file: "obj-icon-supply.png" },
-        { key: "reputazion", file: "obj-icon-reputation.png" },
-        { key: "talenti",    file: "obj-icon-reputation.png" },
-        { key: "persone",    file: "obj-icon-reputation.png" },
-        { key: "reputation", file: "obj-icon-reputation.png" },
-      ];
-      if (need) {
-        const obLower = obLabel.toLowerCase();
-        const match = OBJ_KEYWORDS.find(k => obLower.includes(k.key));
-        const imgFile = match?.file;
-        if (imgFile) {
-          const mediaKey = `ppt/media/${imgFile}`;
-          if (!mainZip.file(mediaKey)) {
-            try {
-              const iconRes = await fetch(`./${imgFile}?v=${Date.now()}`);
-              if (iconRes.ok) {
-                mainZip.file(mediaKey, new Uint8Array(await iconRes.arrayBuffer()));
-              }
-            } catch { /* salta se non disponibile */ }
-          }
-          const objRid = `rObjIcon_${tplSlideIdx}`;
-          slideRels = slideRels.replace(
-            "</Relationships>",
-            `<Relationship Id="${objRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${imgFile}"/></Relationships>`
-          );
-          // Immagine: x=7640000, cx=4140000 (+1cm sx), y=1060000, cy=3000000
-          const objPic = `<p:pic><p:nvPicPr><p:cNvPr id="90${tplSlideIdx}" name="obj_icon_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${objRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="7640000" y="1060000"/><a:ext cx="4140000" cy="3000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
-          slideXml = slideXml.replace("</p:spTree>", objPic + "</p:spTree>");
-        }
-      }
-
     } else {
       // Slide conclusioni
       const summary = buildFindingsSummary(data, isIt, companyName);
