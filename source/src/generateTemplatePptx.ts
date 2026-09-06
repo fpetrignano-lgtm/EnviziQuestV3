@@ -1146,30 +1146,31 @@ async function appendReportFindings(
         }
       }
 
-      // ── Sostituisci immagini riga con l'icona dell'obiettivo corrispondente ──
-      // Mappa priority → file immagine nel template principale (slide5 rels)
+      // ── Aggiungi icona obiettivo per ogni riga ────────────────────────────────
+      // Mappa priority → file immagine nel template principale
       const PRIO_IMG: Record<string, string> = {
         compliance: "image7.png", credit:     "image9.png",
         customers:  "image8.png", efficiency: "image4.png",
         supply:     "image6.png", reputation: "image5.png",
       };
-      // Gruppi di picture id per riga (dalla struttura slide1 del template findings)
-      const ROW_PIC_IDS = [
-        [3, 31, 32, 34],   // riga 1
-        [43, 52, 53, 55],  // riga 2
-        [65, 74, 75, 77],  // riga 3
-      ];
+      // y-offset iniziale di ogni riga (dalla struttura del template findings)
+      const ROW_Y = [974224, 2785304, 4575117];
+      // Dimensione icona: ~3.2cm × 3.2cm (proporzionato come in slide 5)
+      const ICON_CX = 910000;  // ~2.6cm
+      const ICON_CY = 586000;  // ~1.65cm
+
+      // Generiamo id univoci alti (50000+) per non collidere con quelli del template
+      let extraPicIdBase = 50000 + tplSlideIdx * 100;
 
       for (let row = 0; row < 3; row++) {
         const needIdx = offset + row;
         const need = top5[needIdx];
         if (!need) continue;
 
-        // Ricava il file immagine per questa priority
         const imgFile = PRIO_IMG[need.priority];
         if (!imgFile) continue;
 
-        // Aggiungi una relazione nel rels della slide (se non già presente)
+        // Aggiungi relazione se non già presente
         const prioRid = `rFndPrio_${need.priority}`;
         if (!slideRels.includes(`Id="${prioRid}"`)) {
           slideRels = slideRels.replace(
@@ -1178,13 +1179,14 @@ async function appendReportFindings(
           );
         }
 
-        // Sostituisci r:embed delle picture di questa riga con il nuovo rId
-        for (const picId of ROW_PIC_IDS[row]) {
-          slideXml = slideXml.replace(
-            new RegExp(`(<p:pic>[\\s\\S]*?<p:cNvPr[^>]*\\bid="${picId}"[\\s\\S]*?r:embed=")([^"]+)(")`),
-            `$1${prioRid}$3`
-          );
-        }
+        // Posiziona l'icona nell'angolo in alto a sinistra della striscia sinistra della riga
+        const ix = 239629;
+        const iy = ROW_Y[row];
+        const picId = extraPicIdBase + row;
+        const iconPic = `<p:pic><p:nvPicPr><p:cNvPr id="${picId}" name="prio_icon_${row}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${prioRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${ix}" y="${iy}"/><a:ext cx="${ICON_CX}" cy="${ICON_CY}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+
+        // Inserisci prima della chiusura dello spTree
+        slideXml = slideXml.replace("</p:spTree>", iconPic + "</p:spTree>");
       }
 
       // Replace intro sentence (top of slide)
