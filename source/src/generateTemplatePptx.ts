@@ -547,9 +547,9 @@ function replaceSlide7Recommendations(
 }
 
 // ── Slide 6 needs list replacement ───────────────────────────────────────────
-// Left column (shape id=15): numbered list, max 10 items.
-// First 5 = quadrant R>5 AND C>5, sorted by R+C desc.
-// Remaining slots filled by other items sorted by R+C desc, up to total 10.
+// Left column (shape id=15): max 10 items grouped by business objective.
+// First 5 = quadrant R>5 AND C>5 (bold), then others up to 10.
+// Within the 10, items are grouped by priority with a group header.
 function replaceSlide6NeedsList(
   xml: string,
   items: SummaryPptxData["critItems"],
@@ -560,31 +560,41 @@ function replaceSlide6NeedsList(
   // Top 5 from high quadrant (R>5 AND C>5)
   const highQ = sorted.filter(n => n.rel > 5 && n.crit > 5).slice(0, 5);
   const highQIds = new Set(highQ.map(n => n.needId ?? n.label));
+  const others   = sorted.filter(n => !highQIds.has(n.needId ?? n.label));
+  const list     = [...highQ, ...others].slice(0, 10);
 
-  // Fill remaining slots (up to 10 total) with the rest sorted by R+C desc
-  const others = sorted.filter(n => !highQIds.has(n.needId ?? n.label));
-  const list = [...highQ, ...others].slice(0, 10);
+  // Group by priority, preserving the sorted order within each group
+  const groups: { priority: string; items: typeof list }[] = [];
+  for (const it of list) {
+    const g = groups.find(g => g.priority === it.priority);
+    if (g) g.items.push(it);
+    else groups.push({ priority: it.priority, items: [it] });
+  }
 
-  const RPR     = `<a:rPr lang="it-IT" sz="1200" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-  const RPR_HI  = `<a:rPr lang="it-IT" sz="1200" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-  const PPR     = `<a:pPr marL="0" marR="0" indent="0"><a:lnSpc><a:spcPct val="110000"/></a:lnSpc><a:spcBef><a:spcPts val="200"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
-  const HDR_RPR = `<a:rPr lang="it-IT" sz="1200" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-  const HDR_PPR = `<a:pPr marL="0" marR="0" indent="0"><a:lnSpc><a:spcPct val="110000"/></a:lnSpc><a:spcBef><a:spcPts val="0"/></a:spcBef><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buNone/></a:pPr>`;
+  // rPr / pPr helpers
+  const RPR    = `<a:rPr lang="it-IT" sz="1100" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const RPR_HI = `<a:rPr lang="it-IT" sz="1100" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const GRP_RPR= `<a:rPr lang="it-IT" sz="1000" b="1" dirty="0"><a:solidFill><a:srgbClr val="1A6B4A"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const PPR    = `<a:pPr marL="228600" indent="0"><a:lnSpc><a:spcPct val="105000"/></a:lnSpc><a:spcBef><a:spcPts val="100"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
+  const GRP_PPR= `<a:pPr marL="0" indent="0"><a:lnSpc><a:spcPct val="100000"/></a:lnSpc><a:spcBef><a:spcPts val="300"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
 
-  const header = isIt ? "Esigenze per criticità + rilevanza:" : "Needs by criticality + relevance:";
+  // Global rank across all items (for numbering 1–10)
+  let rank = 0;
+  const paras: string[] = [];
 
-  const paras = [
-    `<a:p>${HDR_PPR}<a:r>${HDR_RPR}<a:t>${escapeXml(header)}</a:t></a:r></a:p>`,
-    ...list.map((it, i) => {
-      const isHigh = i < highQ.length;
-      const score = it.rel + it.crit;
-      const line = `${i + 1}. ${it.label}  (R:${it.rel} C:${it.crit} · ${score})`;
-      const rpr = isHigh ? RPR_HI : RPR;
-      return `<a:p>${PPR}<a:r>${rpr}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`;
-    }),
-  ].join("");
+  for (const grp of groups) {
+    // Group header = priority label
+    paras.push(`<a:p>${GRP_PPR}<a:r>${GRP_RPR}<a:t>${escapeXml(grp.priority)}</a:t></a:r></a:p>`);
+    for (const it of grp.items) {
+      rank++;
+      const isHigh = highQIds.has(it.needId ?? it.label);
+      const score  = it.rel + it.crit;
+      const line   = `${rank}. ${it.label}  (R:${it.rel} C:${it.crit} · ${score})`;
+      paras.push(`<a:p>${PPR}<a:r>${isHigh ? RPR_HI : RPR}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`);
+    }
+  }
 
-  const newTxBody = `<p:txBody><a:bodyPr/><a:lstStyle/>${paras}</p:txBody>`;
+  const newTxBody = `<p:txBody><a:bodyPr/><a:lstStyle/>${paras.join("")}</p:txBody>`;
 
   return xml.replace(
     /(<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:cNvPr[^>]*\bid="15"[^>]*>[\s\S]*?)<p:txBody>[\s\S]*?<\/p:txBody>(<\/p:sp>)/,
@@ -1155,15 +1165,18 @@ async function appendReportFindings(
       }
 
       // ── Aggiungi icona obiettivo per ogni riga ────────────────────────────────
-      // Mappa priority → file immagine nel template principale
+      // Mappa priority → file PNG in public/ (nuove icone dedicate)
       const PRIO_IMG: Record<string, string> = {
-        compliance: "image7.png", credit:     "image9.png",
-        customers:  "image8.png", efficiency: "image4.png",
-        supply:     "image6.png", reputation: "image5.png",
+        compliance: "compliance.png",
+        credit:     "credito.png",
+        customers:  "clienti.png",
+        efficiency: "energia.png",
+        supply:     "supply.png",
+        reputation: "reputazione.png",
       };
       // y-offset iniziale di ogni riga (dalla struttura del template findings)
       const ROW_Y = [974224, 2785304, 4575117];
-      // Dimensione icona: ~3.2cm × 3.2cm (proporzionato come in slide 5)
+      // Dimensione icona
       const ICON_CX = 910000;  // ~2.6cm
       const ICON_CY = 586000;  // ~1.65cm
 
@@ -1178,12 +1191,24 @@ async function appendReportFindings(
         const imgFile = PRIO_IMG[need.priority];
         if (!imgFile) continue;
 
+        // Carica l'immagine da public/ e inseriscila nel media del PPTX (prefisso icon_)
+        const mediaKey = `ppt/media/icon_${imgFile}`;
+        if (!mainZip.file(mediaKey)) {
+          try {
+            const iconRes = await fetch(`./${imgFile}?v=${Date.now()}`);
+            if (iconRes.ok) {
+              const iconBytes = new Uint8Array(await iconRes.arrayBuffer());
+              mainZip.file(mediaKey, iconBytes);
+            }
+          } catch { /* se non disponibile, salta */ }
+        }
+
         // Aggiungi relazione se non già presente
         const prioRid = `rFndPrio_${need.priority}`;
         if (!slideRels.includes(`Id="${prioRid}"`)) {
           slideRels = slideRels.replace(
             "</Relationships>",
-            `<Relationship Id="${prioRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${imgFile}"/></Relationships>`
+            `<Relationship Id="${prioRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/icon_${imgFile}"/></Relationships>`
           );
         }
 
