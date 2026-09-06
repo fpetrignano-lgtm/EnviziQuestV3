@@ -1109,23 +1109,26 @@ export function PriorityMatrixScreen({
           })()}
         </svg>
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:"clamp(20px,1.7vw,24px)",lineHeight:1.45,maxWidth:"560px",
-            color: highCount!==5 ? "#fde047" : "#5a9e88",
-            fontWeight: highCount!==5 ? 700 : 400,
-          }}>
-            {highCount!==5
+        {/* ── Banner avviso count ─────────────────────────────────────────── */}
+        {highCount!==5&&<div style={{flexShrink:0,display:"flex",alignItems:"center",gap:"14px",padding:"10px 18px",marginBottom:"6px",borderRadius:"10px",background:"rgba(253,224,71,.10)",border:"2px solid rgba(253,224,71,.55)"}}>
+          <span style={{fontSize:"28px",lineHeight:1}}>⚠️</span>
+          <p style={{margin:0,fontSize:"clamp(16px,1.4vw,20px)",fontWeight:700,color:"#fde047",lineHeight:1.35}}>
+            {isIt
+              ? `Quadrante R>5 e C>5: ${highCount} element${highCount===1?"o":"i"} su 5 richiesti. Apri un riquadro e modifica R o C per arrivare esattamente a 5.`
+              : `R>5 and C>5 quadrant: ${highCount} element${highCount===1?"":"s"} out of 5 required. Open a box and adjust R or C to reach exactly 5.`}
+          </p>
+        </div>}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0 4px",width:"100%",gap:"16px",flexShrink:0}}>
+          <p style={{margin:0,fontSize:"clamp(16px,1.3vw,20px)",lineHeight:1.4,maxWidth:"560px",color:"#5a9e88"}}>
+            {highCount===5&&ucNeeds.length>0&&!allUcDone
               ? (isIt
-                  ? `Il numero di elementi nel quadrante R>5 e C>5 è ${highCount}, non 5. Modifica i valori R o C per arrivare esattamente a 5 prima di procedere.`
-                  : `The number of elements in the R>5 and C>5 quadrant is ${highCount}, not 5. Adjust R or C values to reach exactly 5 before proceeding.`)
-              : ucNeeds.length>0&&!allUcDone
+                  ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
+                  : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
+              : highCount===5
                 ? (isIt
-                    ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
-                    : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
-                : isIt
-                  ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
-                  : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face."
-            }
+                    ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
+                    : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face.")
+                : ""}
           </p>
           {pmFromBriefing
             ? <button className="actionButton" style={{flexShrink:0,width:"auto"}} onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
