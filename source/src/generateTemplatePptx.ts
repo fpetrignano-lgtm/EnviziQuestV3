@@ -1053,6 +1053,21 @@ async function appendReportFindings(
   }
 
 
+  // ── Pre-carica icone obiettivo in mainZip ────────────────────────────────
+  const ICON_FILES = [
+    "icon-credito.png","icon-compliance.png","icon-clienti.png",
+    "icon-energia.png","icon-supply.png","icon-reputazione.png",
+  ];
+  for (const iconFile of ICON_FILES) {
+    const mediaKey = `ppt/media/${iconFile}`;
+    if (!mainZip.file(mediaKey)) {
+      try {
+        const r = await fetch(`./${iconFile}?v=${Date.now()}`);
+        if (r.ok) mainZip.file(mediaKey, new Uint8Array(await r.arrayBuffer()));
+      } catch { /* salta se non disponibile */ }
+    }
+  }
+
   // ── Nuovo template: 1 slide per priorità + 1 conclusioni ─────────────────
   const top5 = data.critItems.slice(0, 5);
   const tplTotalSlides = Object.keys(tplZip.files).filter(f =>
@@ -1218,14 +1233,7 @@ async function appendReportFindings(
         reputation: "icon-reputazione.png",
       };
       const iconFile = need ? ICON_MAP[need.priority] : undefined;
-      if (iconFile) {
-        const mediaKey = `ppt/media/${iconFile}`;
-        if (!mainZip.file(mediaKey)) {
-          try {
-            const iconRes = await fetch(`./${iconFile}?v=${Date.now()}`);
-            if (iconRes.ok) mainZip.file(mediaKey, new Uint8Array(await iconRes.arrayBuffer()));
-          } catch { /* salta */ }
-        }
+      if (iconFile && mainZip.file(`ppt/media/${iconFile}`)) {
         const iconRid = `rIcon_${tplSlideIdx}`;
         slideRels = slideRels.replace(
           "</Relationships>",
