@@ -1035,7 +1035,7 @@ async function appendReportFindings(
   let presXml = await presFile.async("string");
   const existingSlideCount = (presXml.match(/<p:sldId /g) ?? []).length;
 
-  // Copy media from template into main (prefix tpl_ to avoid collisions)
+  // ── Copy media from template (prefix rf_ to avoid collisions) ────────────
   const tplMediaFiles = Object.keys(tplZip.files).filter(f => f.startsWith("ppt/media/"));
   for (const mf of tplMediaFiles) {
     const fname = mf.replace("ppt/media/", "");
@@ -1046,12 +1046,14 @@ async function appendReportFindings(
     }
   }
 
-  // Copy slide layouts/masters references are kept from the main template.
-  // We only copy the 3 slide XMLs, rewriting rIds to point to existing layout rIds.
 
-  const FINDINGS_SLIDE_COUNT = 3;
-  // Build per-need data: top 5 critItems
+  // ── Nuovo template: 1 slide per priorità + 1 conclusioni ─────────────────
   const top5 = data.critItems.slice(0, 5);
+  const tplTotalSlides = Object.keys(tplZip.files).filter(f =>
+    /^ppt\/slides\/slide\d+\.xml$/.test(f) && !f.includes("_rels")
+  ).length;
+  const FINDINGS_SLIDE_COUNT = tplTotalSlides;
+  const CONCLUSIONI_IDX = tplTotalSlides; // ultima slide = conclusioni
 
   for (let tplSlideIdx = 1; tplSlideIdx <= FINDINGS_SLIDE_COUNT; tplSlideIdx++) {
     const newSlideNum = existingSlideCount + tplSlideIdx;
@@ -1061,185 +1063,163 @@ async function appendReportFindings(
     if (!tplSlideFile) continue;
 
     let slideXml = await tplSlideFile.async("string");
-    let slideRels = "";
+
+    // ── Build rels from scratch: solo slideLayout1 + eventuali immagini ──────
     const tplRelsFile = tplZip.file(tplSlideRelsPath);
-    if (tplRelsFile) slideRels = await tplRelsFile.async("string");
-
-    // ── Rewrite media rIds in rels to point to rf_ prefixed files ────────────
-    // Map old rId → new rId (keep same id, update target path)
-    slideRels = slideRels.replace(
-      /Target="\.\.\/media\/([^"]+)"/g,
-      (_m: string, fname: string) => `Target="../media/rf_${fname}"`
-    );
-
-    // ── Point slide layout to the first layout of main PPTX ─────────────────
-    // Replace slideLayout rel target with the main's slideLayout1
-    slideRels = slideRels.replace(
-      /Target="\.\.\/slideLayouts\/slideLayout\d+\.xml"/g,
-      'Target="../slideLayouts/slideLayout1.xml"'
-    );
-
-    // ── Dynamic text injection ────────────────────────────────────────────────
-    if (tplSlideIdx === 1 || tplSlideIdx === 2) {
-      // Each findings slide has 3 content rows (needs)
-      // Slide 1: needs 1-3, Slide 2: needs 4-5 (+ empty 3rd row)
-      const offset = (tplSlideIdx - 1) * 3;
-
-      // Use find-replace on the placeholder strings (more robust than shape IDs)
-      const rowPlaceholders = [
-        {
-          sfida: ["Testo sfida numero 1 nella matrice", "La principale sfida di dati è segue Testo sfida numero 1"],
-          uc:    ["Testo da pop up in app 23 · priority Matrix associato alla sfida numero 1"],
-          cap:   ["Testo da foglio excel Use case, testo in colonna F e G"],
-          ob:    ["Obiettivo compliance e reporting"],
-        },
-        {
-          sfida: ["Testo sfida numero 2 nella matrice", "La principale sfida di dati è segue Testo sfida numero 2"],
-          uc:    [], cap: [], ob: ["Obiettivo compliance e reporting"],
-        },
-        {
-          sfida: ["Testo sfida numero 3 nella matrice", "La principale sfida di dati è segue Testo sfida numero 3"],
-          uc:    [], cap: [], ob: ["Obiettivo compliance e reporting"],
-        },
-      ];
-
-      // Replace each row's placeholders
-      for (let row = 0; row < 3; row++) {
-        const needIdx = offset + row;
-        const need = top5[needIdx];
-        const ph = rowPlaceholders[row];
-
-        // Obiettivo (priority label)
-        const obLabel = need
-          ? (isIt ? PRIO_LABEL_IT[need.priority] ?? need.priority : PRIO_LABEL_EN[need.priority] ?? need.priority)
-          : "";
-        for (const p of ph.ob) {
-          slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(obLabel));
-        }
-
-        // Sfida (need label)
-        const sfidaText = need ? need.label : "";
-        for (const p of ph.sfida) {
-          slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(sfidaText));
-        }
-
-        // Use case (selected scenarios concatenated)
-        if (need) {
-          const selIdxs = data.ucSelections?.[need.needId ?? ""] ?? [];
-          const scenarios = data.ucScenarios?.[need.needId ?? ""] ?? [];
-          const ucText = selIdxs.length > 0
-            ? selIdxs.map(i => scenarios[i] ?? "").filter(Boolean).join("\n• ")
-            : (isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)");
-          const fullUcText = selIdxs.length > 0 ? "• " + ucText : ucText;
-          if (ph.uc.length > 0) {
-            for (const p of ph.uc) {
-              slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(fullUcText));
-            }
-          } else {
-            // Row 2-3: find the second/third occurrence of the generic uc placeholder
-            slideXml = replaceNthOccurrence(
-              slideXml,
-              "Testo da pop up in app 23",
-              xmlEsc(fullUcText),
-              row  // 0-indexed occurrence
-            );
-          }
-
-          // Capacità
-          const capText = data.needCapabilities?.[need.needId ?? ""]
-            ? (isIt ? data.needCapabilities![need.needId!].it : data.needCapabilities![need.needId!].en)
-            : (isIt ? "(capacità da definire)" : "(capability to be defined)");
-          if (ph.cap.length > 0) {
-            for (const p of ph.cap) {
-              slideXml = slideXml.replace(new RegExp(escapeRe(p), "g"), xmlEsc(capText));
-            }
-          } else {
-            slideXml = replaceNthOccurrence(
-              slideXml,
-              "Testo da foglio excel Use case",
-              xmlEsc(capText),
-              row
-            );
-          }
-        }
+    let slideRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
+    slideRels += `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`;
+    if (tplRelsFile) {
+      const origRels = await tplRelsFile.async("string");
+      const imgRelRegex = /<Relationship[^>]*Type="[^"]*\/image"[^>]*Id="([^"]*)"[^>]*Target="[^"]*\/media\/([^"]+)"[^>]*\/>/g;
+      let imgMatch;
+      while ((imgMatch = imgRelRegex.exec(origRels)) !== null) {
+        slideRels += `<Relationship Id="${imgMatch[1]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rf_${imgMatch[2]}"/>`;
       }
+    }
+    slideRels += `</Relationships>`;
 
-      // ── Aggiungi icona obiettivo per ogni riga ────────────────────────────────
-      // Mappa priority → file PNG in public/ (nuove icone dedicate)
-      const PRIO_IMG: Record<string, string> = {
-        compliance: "compliance.png",
-        credit:     "credito.png",
-        customers:  "clienti.png",
-        efficiency: "energia.png",
-        supply:     "supply.png",
-        reputation: "reputazione.png",
+    // ── Iniezione dati ────────────────────────────────────────────────────────
+    if (tplSlideIdx < CONCLUSIONI_IDX) {
+      const need = top5[tplSlideIdx - 1];
+
+      // Titolo rank
+      slideXml = slideXml.replace(/Priorità \d+: /g, xmlEsc(`Priorità ${tplSlideIdx}: `));
+
+      // Label sfida
+      const sfidaPlaceholder = "Emissioni e calcoli GHG Scope 1, 2 e 3 verificabili, tracciabili e riconciliabili";
+      slideXml = slideXml.replace(
+        new RegExp(escapeRe(sfidaPlaceholder), "g"),
+        xmlEsc(need ? need.label : "")
+      );
+
+       // Obiettivo — una riga sola, sostituisce solo il testo dopo "Obiettivo: "
+      const OB_SHORT_IT: Record<string, string> = {
+        credit:     "Accesso al credito e finanza ESG",
+        compliance: "Compliance e reporting",
+        customers:  "Clienti e mercato",
+        efficiency: "Efficienza operativa",
+        supply:     "Supply chain",
+        reputation: "Reputazione e persone",
       };
-      // y-offset iniziale di ogni riga (dalla struttura del template findings)
-      const ROW_Y = [974224, 2785304, 4575117];
-      // Dimensione icona
-      const ICON_CX = 910000;  // ~2.6cm
-      const ICON_CY = 586000;  // ~1.65cm
+      const OB_SHORT_EN: Record<string, string> = {
+        credit:     "ESG credit & finance",
+        compliance: "Compliance & reporting",
+        customers:  "Customers & market",
+        efficiency: "Operational efficiency",
+        supply:     "Supply chain",
+        reputation: "Reputation & people",
+      };
+      const obLabel = need
+        ? (isIt ? OB_SHORT_IT[need.priority] ?? need.priority : OB_SHORT_EN[need.priority] ?? need.priority)
+        : "";
+      // Svuota il textbox id="5" (etichetta Obiettivo separata — ora è nel corpo)
+      slideXml = slideXml.replace(
+        /(<p:cNvPr id="5"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
+        `$1<a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p><a:endParaRPr lang="it-IT" sz="1600" dirty="0"/></a:p>$2`
+      );
 
-      // Generiamo id univoci alti (50000+) per non collidere con quelli del template
-      let extraPicIdBase = 50000 + tplSlideIdx * 100;
+      // ── Use case + Capacità: riscrive spPr + txBody del textbox id="6" ──────
+      const selIdxs = need ? (data.ucSelections?.[need.needId ?? ""] ?? []) : [];
+      const scenarios = need ? (data.ucScenarios?.[need.needId ?? ""] ?? []) : [];
+      const ucLines = selIdxs.length > 0
+        ? selIdxs.map(i => scenarios[i] ?? "").filter(Boolean)
+        : [(isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)")];
 
-      for (let row = 0; row < 3; row++) {
-        const needIdx = offset + row;
-        const need = top5[needIdx];
-        if (!need) continue;
+      const cap = need ? data.needCapabilities?.[need.needId ?? ""] : undefined;
+      const capText = cap
+        ? (isIt ? cap.it : cap.en)
+        : (isIt ? "(capacità da definire)" : "(capability to be defined)");
+      const capLines = capText.split(/\n/).filter(Boolean);
 
-        const imgFile = PRIO_IMG[need.priority];
-        if (!imgFile) continue;
+      // Shorthand per costruire un run Calibri 16pt
+      const rpr = `<a:rPr lang="it-IT" sz="1600" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
+      const rprBold = `<a:rPr lang="it-IT" sz="1600" b="1" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
+      const para = (rprStr: string, text: string) =>
+        `<a:p><a:r>${rprStr}<a:t>${xmlEsc(text)}</a:t></a:r></a:p>`;
+      const paraEmpty = () => `<a:p><a:endParaRPr lang="it-IT" sz="1600" dirty="0"/></a:p>`;
 
-        // Carica l'immagine da public/ e inseriscila nel media del PPTX (prefisso icon_)
-        const mediaKey = `ppt/media/icon_${imgFile}`;
-        if (!mainZip.file(mediaKey)) {
-          try {
-            const iconRes = await fetch(`./${imgFile}?v=${Date.now()}`);
-            if (iconRes.ok) {
-              const iconBytes = new Uint8Array(await iconRes.arrayBuffer());
-              mainZip.file(mediaKey, iconBytes);
-            }
-          } catch { /* se non disponibile, salta */ }
-        }
+      const newTxBody =
+        `<a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/>` +
+        // "Obiettivo:" in grassetto + valore su riga successiva
+        para(rprBold, isIt ? "Obiettivo:" : "Objective:") +
+        para(rpr, obLabel) +
+        paraEmpty() +
+        // "Use case:" in grassetto + scenari su righe proprie
+        para(rprBold, "Use case:") +
+        ucLines.map(l => para(rpr, l)).join("") +
+        paraEmpty() +
+        // "Capacità digitali necessarie:" in grassetto + capacità su righe proprie
+        para(rprBold, isIt ? "Capacità digitali necessarie:" : "Required digital capabilities:") +
+        capLines.map(l => para(rpr, l)).join("");
 
-        // Aggiungi relazione se non già presente
-        const prioRid = `rFndPrio_${need.priority}`;
-        if (!slideRels.includes(`Id="${prioRid}"`)) {
+      // Blocco corpo: y → 1100000 (alzato 2.5cm), cx → 6800000
+      slideXml = slideXml.replace(
+        /(<p:cNvPr id="6"[^>]*>[\s\S]*?<a:off x=")343786(" y=")\d+("\/><a:ext cx=")\d+(")/,
+        `$1343786$2${1100000}$3${6800000}$4`
+      );
+
+      // Sostituisce l'intero txBody del textbox id="6"
+      slideXml = slideXml.replace(
+        /(<p:cNvPr id="6"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
+        `$1${newTxBody}$2`
+      );
+
+      // ── Immagine obiettivo in alto a destra ───────────────────────────────────
+      // Seleziona per parola chiave nel testo obLabel (es. "credito" → credito.png)
+      const OBJ_KEYWORDS: { key: string; file: string }[] = [
+        { key: "credito",    file: "obj-icon-credit.png" },
+        { key: "credit",     file: "obj-icon-credit.png" },
+        { key: "compliance", file: "obj-icon-compliance.png" },
+        { key: "reporting",  file: "obj-icon-compliance.png" },
+        { key: "clienti",    file: "obj-icon-customers.png" },
+        { key: "customer",   file: "obj-icon-customers.png" },
+        { key: "mercato",    file: "obj-icon-customers.png" },
+        { key: "efficien",   file: "obj-icon-efficiency.png" },
+        { key: "energia",    file: "obj-icon-efficiency.png" },
+        { key: "supply",     file: "obj-icon-supply.png" },
+        { key: "filiera",    file: "obj-icon-supply.png" },
+        { key: "reputazion", file: "obj-icon-reputation.png" },
+        { key: "talenti",    file: "obj-icon-reputation.png" },
+        { key: "persone",    file: "obj-icon-reputation.png" },
+        { key: "reputation", file: "obj-icon-reputation.png" },
+      ];
+      if (need) {
+        const obLower = obLabel.toLowerCase();
+        const match = OBJ_KEYWORDS.find(k => obLower.includes(k.key));
+        const imgFile = match?.file;
+        if (imgFile) {
+          const mediaKey = `ppt/media/${imgFile}`;
+          if (!mainZip.file(mediaKey)) {
+            try {
+              const iconRes = await fetch(`./${imgFile}?v=${Date.now()}`);
+              if (iconRes.ok) {
+                mainZip.file(mediaKey, new Uint8Array(await iconRes.arrayBuffer()));
+              }
+            } catch { /* salta se non disponibile */ }
+          }
+          const objRid = `rObjIcon_${tplSlideIdx}`;
           slideRels = slideRels.replace(
             "</Relationships>",
-            `<Relationship Id="${prioRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/icon_${imgFile}"/></Relationships>`
+            `<Relationship Id="${objRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${imgFile}"/></Relationships>`
           );
+          // Immagine: x=7640000, cx=4140000 (+1cm sx), y=1060000, cy=3000000
+          const objPic = `<p:pic><p:nvPicPr><p:cNvPr id="90${tplSlideIdx}" name="obj_icon_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${objRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="7640000" y="1060000"/><a:ext cx="4140000" cy="3000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+          slideXml = slideXml.replace("</p:spTree>", objPic + "</p:spTree>");
         }
-
-        // Posiziona l'icona nell'angolo in alto a sinistra della striscia sinistra della riga
-        const ix = 239629;
-        const iy = ROW_Y[row];
-        const picId = extraPicIdBase + row;
-        const iconPic = `<p:pic><p:nvPicPr><p:cNvPr id="${picId}" name="prio_icon_${row}"/><p:cNvPicPr/><p:nvPr/></p:nvPicPr><p:blipFill><a:blip r:embed="${prioRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill><p:spPr><a:xfrm><a:off x="${ix}" y="${iy}"/><a:ext cx="${ICON_CX}" cy="${ICON_CY}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
-
-        // Inserisci prima della chiusura dello spTree
-        slideXml = slideXml.replace("</p:spTree>", iconPic + "</p:spTree>");
       }
 
-      // Replace intro sentence (top of slide)
-      const introOld = "Erica presenta criticità operative in ambito ESG che richiedono l&apos;esame di specifiche capacità digitali a supporto degli use case presi in esame.";
-      const introOld2 = "Erica presenta criticità operative in ambito ESG che richiedono l'esame di specifiche capacità digitali a supporto degli use case presi in esame.";
-      const introNew = isIt
-        ? `${xmlEsc(companyName)} presenta criticità operative in ambito ESG che richiedono l&apos;esame di specifiche capacità digitali a supporto degli use case presi in esame.`
-        : `${xmlEsc(companyName)} presents operational ESG challenges requiring specific digital capabilities to support the use cases analysed.`;
-      slideXml = slideXml.replace(new RegExp(escapeRe(introOld), "g"), introNew);
-      slideXml = slideXml.replace(new RegExp(escapeRe(introOld2), "g"), introNew.replace("&apos;", "'"));
-
-    } else if (tplSlideIdx === 3) {
-      // Slide 3: Conclusioni — replace "Valutazione" with full generated summary
+    } else {
+      // Slide conclusioni
       const summary = buildFindingsSummary(data, isIt, companyName);
       slideXml = slideXml.replace(
-        new RegExp(escapeRe("Valutazione"), "g"),
+        new RegExp(escapeRe("Genera sintesi delle informazioni organizzate nella presentazione"), "g"),
         xmlEsc(summary)
       );
+      slideXml = slideXml.replace(
+        new RegExp(escapeRe("Raccomanda una analisi di adozione di nuova strategia digitale che indirizza l'analisi fatta"), "g"),
+        ""
+      );
     }
-
     // ── Write slide XML and rels into main zip ────────────────────────────────
     const newSlidePath = `ppt/slides/slide${newSlideNum}.xml`;
     const newSlideRelsPath = `ppt/slides/_rels/slide${newSlideNum}.xml.rels`;
@@ -1836,8 +1816,40 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     await processSlide4FromFwTemplate(zip, data.frameworkChecks, resolvedCompanyName, slide4Title, isIt);
   }
 
+  // ── Numera tutte le slide ─────────────────────────────────────────────────────
+  const allSlideFiles = Object.keys(zip.files).filter(f =>
+    /^ppt\/slides\/slide\d+\.xml$/.test(f)
+  );
+  for (const sf of allSlideFiles) {
+    const slideFile = zip.file(sf);
+    if (!slideFile) continue;
+    let sxml = await slideFile.async("string");
+    // Inietta numero pagina solo se non già presente
+    if (!sxml.includes("SLIDENUM") && !sxml.includes("slidenum")) {
+      // Shape in basso a destra: campo SLIDENUM
+      // L'id del campo deve essere un GUID — usiamo uno fisso derivato dall'indice slide
+      const slideIdx = sf.match(/slide(\d+)\.xml/)?.[1] ?? "1";
+      const fldId = `{A1B2C3D${slideIdx.padStart(1,"0")}-E4F5-6789-ABCD-EF0123456789}`;
+      const pageNumShape =
+        `<p:sp><p:nvSpPr><p:cNvPr id="9901" name="pageNum"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>` +
+        `<p:spPr><a:xfrm><a:off x="10800000" y="6400000"/><a:ext cx="1200000" cy="300000"/></a:xfrm>` +
+        `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>` +
+        `<p:txBody><a:bodyPr rtlCol="0"/><a:lstStyle/>` +
+        `<a:p><a:fld id="${fldId}" type="slidenum">` +
+        `<a:rPr lang="it-IT" sz="1000" b="0" dirty="0"/>` +
+        `<a:t>${slideIdx}</a:t></a:fld></a:p></p:txBody></p:sp>`;
+      sxml = sxml.replace("</p:spTree>", pageNumShape + "</p:spTree>");
+      zip.file(sf, sxml);
+    }
+  }
+
   // ── Append Report Findings slides ────────────────────────────────────────────
-  await appendReportFindings(zip, data, isIt, resolvedCompanyName);
+  try {
+    await appendReportFindings(zip, data, isIt, resolvedCompanyName);
+  } catch (e) {
+    console.error("[appendReportFindings] errore:", e);
+    // continua comunque con il download senza le slides findings
+  }
 
   // Generate and download
   const outBuf = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE" });
