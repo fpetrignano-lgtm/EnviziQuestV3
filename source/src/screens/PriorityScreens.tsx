@@ -1087,8 +1087,8 @@ export function PriorityMatrixScreen({
               {/* Instruction */}
               <p style={{margin:"0 0 20px",fontSize:"26px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
                 {isIt
-                  ? "Seleziona tutti gli use case in cui ti riconosci e che sono significativi nella tua realtà. Devi sceglierne almeno uno per continuare."
-                  : "Select all use cases that apply to your situation and are significant in your context. You must choose at least one to continue."}
+                  ? "Seleziona tutti gli use case che sono significativi nella tua realtà. Identificati con il ruolo se citato. Devi sceglierne almeno uno per continuare."
+                  : "Select all use cases that are significant in your context. Identify with the role if mentioned. You must choose at least one to continue."}
               </p>
               {/* Use case list */}
               <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px"}}>
