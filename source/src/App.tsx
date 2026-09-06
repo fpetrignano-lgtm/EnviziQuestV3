@@ -437,7 +437,10 @@ export default function Home(){
     return ()=>{};
   },[profile,saveBtnOpen,saveBtnName,questName]);
 
-  // Journey panel globale — stesso pattern del save overlay
+  // Journey panel — ref stabili per evitare closure stale nel root separato
+  const journeyActionsRef=useRef({setJourneyOpen,setScreenState});
+  useEffect(()=>{journeyActionsRef.current={setJourneyOpen,setScreenState};},[setJourneyOpen,setScreenState]);
+
   useEffect(()=>{
     let container=document.getElementById("envizi-journey-panel");
     if(!container){
@@ -451,15 +454,17 @@ export default function Home(){
       return r;
     })();
     if(!journeyOpen){root.render(<></>);return;}
+    const close=()=>journeyActionsRef.current.setJourneyOpen(false);
+    const go=(s:Screen)=>{journeyActionsRef.current.setJourneyOpen(false);journeyActionsRef.current.setScreenState(s);};
     root.render(
-      <div style={{position:"fixed",inset:0,zIndex:199998,background:"rgba(7,18,15,.88)",display:"flex",alignItems:"flex-start",justifyContent:"flex-end"}} onClick={()=>setJourneyOpen(false)}>
+      <div style={{position:"fixed",inset:0,zIndex:199998,background:"rgba(7,18,15,.88)",display:"flex",alignItems:"flex-start",justifyContent:"flex-end"}} onClick={close}>
         <div style={{background:"#0d1f19",border:"1px solid rgba(57,239,180,.22)",borderRadius:"0 0 0 14px",padding:"16px 0",width:"320px",height:"100vh",overflowY:"auto",boxShadow:"-8px 0 40px rgba(0,0,0,.5)"}} onClick={e=>e.stopPropagation()}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"0 18px 8px"}}>
             <span style={{fontSize:"11px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#39efb4",opacity:.7}}>Journey</span>
-            <button style={{background:"none",border:"none",color:"#39efb4",cursor:"pointer",fontSize:"16px"}} onClick={()=>setJourneyOpen(false)}>✕</button>
+            <button style={{background:"none",border:"none",color:"#39efb4",cursor:"pointer",fontSize:"16px"}} onClick={close}>✕</button>
           </div>
           {ALL_SCREENS.map((s,i)=>(
-            <button key={s} onClick={()=>{setJourneyOpen(false);setScreenState(s as any);}} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"7px 18px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:"#b5c9c1",fontFamily:"var(--font-geist-mono,monospace)",fontSize:"12px",letterSpacing:".04em",transition:".1s"}}>
+            <button key={s} onClick={()=>go(s)} style={{display:"flex",alignItems:"center",gap:"10px",width:"100%",padding:"7px 18px",background:"none",border:"none",cursor:"pointer",textAlign:"left",color:s===screen?"#39efb4":"#b5c9c1",fontFamily:"var(--font-geist-mono,monospace)",fontSize:"12px",letterSpacing:".04em",borderLeft:s===screen?"3px solid #39efb4":"3px solid transparent",transition:".1s"}}>
               <span style={{opacity:.5,minWidth:"22px"}}>{String(i+1).padStart(2,"0")}</span>
               <span>{s}</span>
             </button>
@@ -467,7 +472,6 @@ export default function Home(){
         </div>
       </div>
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[journeyOpen,screen]);
 
   // Rimuovi overlay quando il profilo viene rimosso (reset)
