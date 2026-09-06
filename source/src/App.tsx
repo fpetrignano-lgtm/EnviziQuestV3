@@ -508,7 +508,6 @@ export default function Home(){
               <div style="font-family:var(--font-geist-mono,monospace);font-size:22px;font-weight:700;color:#39efb4;letter-spacing:.08em;line-height:1.3;">⌘⇧R &nbsp;<span style="font-size:13px;opacity:.6;font-weight:400;">/ Ctrl⇧R</span></div>
               <div style="margin-top:4px;font-family:var(--font-geist-mono,monospace);font-size:11px;color:rgba(57,239,180,.7);letter-spacing:.1em;text-transform:uppercase;">torna alla cover da qualsiasi schermata</div>
             </div>
-            <div style="margin-top:8px;font-size:10px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.35);letter-spacing:.06em;">⌘⇧J / Ctrl⇧J &nbsp;·&nbsp; apri/chiudi Journey</div>
           </div>
           <div style="padding:0 24px 32px;flex:1;">
             <table id="envizi-journey-table" style="width:100%;border-collapse:collapse;margin-top:8px;">
