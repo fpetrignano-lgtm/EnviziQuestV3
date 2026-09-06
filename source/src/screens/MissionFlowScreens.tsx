@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import type { Outcome, Profile } from "../types";
 import type { CommonProps } from "./types";
 import { missionCatalog, imageFor } from "../constants";
@@ -124,7 +126,7 @@ export function MissionFlowScreen({
               <div className="asIsRatingGrid">{active.asIsItems.map((item,i)=>{const r=currentRatings[i];return<article key={item.title} className={`asIsRatingCard${r?" asIsRating-"+r:""}`}><div className="asIsRatingCardTop"><h2>{item.title}</h2><p>{item.detail}</p></div><div className="asIsRatingButtons"><button className={`asIsRatingBtn${r==="alto"?" asIsRatingBtnActive asIsRatingBtnAlto":""}`} onClick={()=>setRating(i,"alto")}>{language==="it"?"Alto":"High"}</button><button className={`asIsRatingBtn${r==="medio"?" asIsRatingBtnActive asIsRatingBtnMedio":""}`} onClick={()=>setRating(i,"medio")}>{language==="it"?"Medio":"Medium"}</button><button className={`asIsRatingBtn${r==="basso"?" asIsRatingBtnActive asIsRatingBtnBasso":""}`} onClick={()=>setRating(i,"basso")}>{language==="it"?"Basso":"Low"}</button></div></article>})}</div>
               {allSelected&&<div className="asisTotal"><span className="asisTotalLabel" style={{color:totalColor}}>{language==="it"?"Criticità totale":"Total criticality"}</span><span className="asisTotalScore" style={{color:totalColor}}>{total}<span className="asisTotalMax">/100</span></span><span className="asisTotalBadge" style={{color:totalColor,borderColor:totalColor}}>{totalLabel}</span></div>}
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:"8px"}}>
-                <button className="introBackBtn" onClick={()=>goBack()}>← {language==="it"?"Indietro":"Back"}</button>
+                <button className="introBackBtn" onClick={()=>setScreen("compare")}>← {language==="it"?"Indietro":"Back"}</button>
                 <button className="actionButton asisBottomBtn" onClick={()=>setScreen(selectedMission===0?"dataFoundation":selectedMission===1?"energyFoundation":selectedMission===2?"supplyFoundation":selectedMission===3?"reportingFoundation":selectedMission===4?"planningFoundation":selectedMission===5?"frameworkFoundation":"missions")}>{language==="it"?"Continua →":"Continue →"}<b>→</b></button>
               </div>
             </div>
@@ -215,10 +217,15 @@ export function MissionFlowScreen({
           <div><span>{active.metricLabels[2]}</span><strong>{resultValues[2]}</strong></div>
         </div>
         <blockquote className="boardQuote"><small>{t.boardQuoteLabel} · CFO, {displayCompanyName}</small><p>"{t.boardQuotes[selectedMission][screen==="success"?"positive":negativeChoice==="form"?"warning":"critical"]}"</p></blockquote>
-        <button className="actionButton" onClick={()=>setScreen(selectedMission===0?"milestone":"missions")}>{t.backScenarios}<b>→</b></button>
-        {screen==="success"&&renderSaveBtn(language==="it")}
+        <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
+          {screen==="success"&&renderSaveBtn(language==="it")}
+        </div>
       </>}
 
     </section>
+    {result&&createPortal(
+      <button style={{position:"fixed",bottom:"24px",right:"24px",zIndex:99999,margin:0,padding:"16px 24px",background:"var(--teal)",color:"#03110c",border:"none",borderRadius:"12px",fontWeight:700,fontSize:"15px",cursor:"pointer",display:"flex",alignItems:"center",gap:"12px",width:"auto"}} onClick={()=>setScreen(selectedMission===0?"milestone":"missions")}>{t.backScenarios} <b>→</b></button>,
+      document.body
+    )}
   </main>;
 }

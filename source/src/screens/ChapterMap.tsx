@@ -26,9 +26,11 @@ const FIXED_BOTTOM: { num: string; labelIt: string; labelEn: string; subIt: stri
 interface Props extends CommonProps {
   name: string;
   missionOrder: number[];
+  missionOutcomes: Record<number, string>;
+  trustScore: number;
 }
 
-export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder }: Props) {
+export function ChapterMap({ language, profile, setLanguage, setScreen, reset, renderTrustBar, name, missionOrder, missionOutcomes, trustScore }: Props) {
   const isIt = language === "it";
   const [zoomWarnOpen,setZoomWarnOpen]=useState(false);
   useEffect(()=>{
@@ -80,6 +82,18 @@ export function ChapterMap({ language, profile, setLanguage, setScreen, reset, r
         <div style={{ flexShrink: 0, width: "180px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px" }}>
           <img src={`./characters/${profile}-neutral.png`} alt={name} style={{ width: "160px", height: "160px", objectFit: "contain", borderRadius: "50%", display: "block" }}/>
           <span style={{ fontWeight: 700, fontSize: "16px", textAlign: "center", lineHeight: 1.3 }}>{name}<br/><small style={{ fontWeight: 400, fontSize: "13px", color: "var(--muted)" }}>ESG Manager</small></span>
+          {Object.keys(missionOutcomes).length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%", marginTop: "6px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: "8px", background: "rgba(57,239,180,.08)", border: "1px solid rgba(57,239,180,.25)" }}>
+                <span style={{ fontSize: "11px", color: "#39efb4", opacity: .75, fontFamily: "var(--font-geist-mono,monospace)", textTransform: "uppercase", letterSpacing: ".06em" }}>{isIt ? "Missioni" : "Missions"}</span>
+                <span style={{ fontSize: "15px", fontWeight: 700, color: "#39efb4", fontVariantNumeric: "tabular-nums" }}>{Object.keys(missionOutcomes).length}<span style={{ fontWeight: 400, color: "#39efb4", opacity: .6 }}>/6</span></span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", borderRadius: "8px", background: "rgba(59,130,244,.08)", border: "1px solid rgba(59,130,244,.25)" }}>
+                <span style={{ fontSize: "11px", color: "#7dd3fc", opacity: .75, fontFamily: "var(--font-geist-mono,monospace)", textTransform: "uppercase", letterSpacing: ".06em" }}>{isIt ? "Fiducia" : "Trust"}</span>
+                <span style={{ fontSize: "15px", fontWeight: 700, color: "#7dd3fc", fontVariantNumeric: "tabular-nums" }}>{trustScore}<span style={{ fontWeight: 400, color: "#7dd3fc", opacity: .6 }}>/100</span></span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* colonna destra: titolo + griglia sezioni */}

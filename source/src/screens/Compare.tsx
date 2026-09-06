@@ -60,8 +60,9 @@ export function Compare({
       <header className="missionNav">
         <button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
         <div className="missionProgress"><span className="activeDot"/> {t.mission} <b>{String(selectedMission+1).padStart(2,"0")}</b><i>/</i>06</div>
-        <button className="introBackBtn" onClick={()=>{setScreenHistory((h:any[])=>h.filter((s:any)=>s!=="compare"));setScreenState("asis");}}>← {isIt?"Indietro":"Back"}</button>
-        <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
+        <div className="introNavRight">
+          <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
+        </div>
       </header>
       <section className="compareBody">
         <h1>{isIt?"Scegli la strada":"Choose your path"}</h1>
@@ -86,6 +87,7 @@ export function Compare({
           ))}
         </div>
       </section>
+      <button className="secondaryAction" style={{position:"fixed",bottom:"24px",left:"24px",zIndex:9998}} onClick={()=>{setScreenHistory((h:any[])=>h.filter((s:any)=>s!=="compare"));setScreenState("asis");}}>← {isIt?"Indietro":"Back"}</button>
     </main>
   );
 }
