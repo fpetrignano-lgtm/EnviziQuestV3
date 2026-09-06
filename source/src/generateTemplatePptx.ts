@@ -1156,11 +1156,14 @@ async function appendReportFindings(
         `<a:p><a:r>${rprStr}<a:t>${xmlEsc(text)}</a:t></a:r></a:p>`;
       const paraEmpty = () => `<a:p><a:endParaRPr lang="it-IT" sz="1600" dirty="0"/></a:p>`;
 
+      // Paragrafo con due run: "Obiettivo: " bold + valore normale — tutto su una riga
+      const paraInline = (boldRpr: string, normalRpr: string, label: string, value: string) =>
+        `<a:p><a:r>${boldRpr}<a:t>${xmlEsc(label)}</a:t></a:r><a:r>${normalRpr}<a:t>${xmlEsc(value)}</a:t></a:r></a:p>`;
+
       const newTxBody =
         `<a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/>` +
-        // "Obiettivo:" in grassetto + valore su riga successiva
-        para(rprBold, isIt ? "Obiettivo:" : "Objective:") +
-        para(rpr, obLabel) +
+        // "Obiettivo: Compliance e reporting" tutto su una riga
+        paraInline(rprBold, rpr, isIt ? "Obiettivo: " : "Objective: ", obLabel) +
         paraEmpty() +
         // "Use case:" in grassetto + scenari su righe proprie (separati da riga vuota)
         para(rprBold, "Use case:") +
