@@ -1,6 +1,12 @@
 import JSZip from "jszip";
 import type { SummaryPptxData } from "./generateSummaryPptx";
 import { SCENARIO_MODULES } from "./constants";
+import iconCredito    from "../public/icon-credito.png";
+import iconCompliance from "../public/icon-compliance.png";
+import iconClienti    from "../public/icon-clienti.png";
+import iconEnergia    from "../public/icon-energia.png";
+import iconSupply     from "../public/icon-supply.png";
+import iconReputazione from "../public/icon-reputazione.png";
 
 // ── Map PNG generator ─────────────────────────────────────────────────────────
 // Renders the same world-footprint image used in the app, with office pins
@@ -1053,18 +1059,35 @@ async function appendReportFindings(
   }
 
 
-  // ── Pre-carica icone obiettivo in mainZip ────────────────────────────────
-  const ICON_FILES = [
-    "icon-credito.png","icon-compliance.png","icon-clienti.png",
-    "icon-energia.png","icon-supply.png","icon-reputazione.png",
-  ];
-  for (const iconFile of ICON_FILES) {
+  // ── Pre-carica icone obiettivo in mainZip (da import Vite — funziona anche da file://) ──
+  // dataUrlToBytes converte un data URL base64 o un URL relativo in Uint8Array
+  const dataUrlToBytes = async (url: string): Promise<Uint8Array | null> => {
+    try {
+      if (url.startsWith("data:")) {
+        const b64 = url.split(",")[1];
+        const bin = atob(b64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        return bytes;
+      }
+      const r = await fetch(url);
+      if (r.ok) return new Uint8Array(await r.arrayBuffer());
+    } catch { /* salta */ }
+    return null;
+  };
+  const ICON_MAP_IMPORTS: Record<string, string> = {
+    "icon-credito.png":     iconCredito,
+    "icon-compliance.png":  iconCompliance,
+    "icon-clienti.png":     iconClienti,
+    "icon-energia.png":     iconEnergia,
+    "icon-supply.png":      iconSupply,
+    "icon-reputazione.png": iconReputazione,
+  };
+  for (const [iconFile, iconUrl] of Object.entries(ICON_MAP_IMPORTS)) {
     const mediaKey = `ppt/media/${iconFile}`;
     if (!mainZip.file(mediaKey)) {
-      try {
-        const r = await fetch(`./${iconFile}?v=${Date.now()}`);
-        if (r.ok) mainZip.file(mediaKey, new Uint8Array(await r.arrayBuffer()));
-      } catch { /* salta se non disponibile */ }
+      const bytes = await dataUrlToBytes(iconUrl);
+      if (bytes) mainZip.file(mediaKey, bytes);
     }
   }
 
