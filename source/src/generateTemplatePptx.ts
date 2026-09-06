@@ -1124,66 +1124,89 @@ async function appendReportFindings(
       const obLabel = need
         ? (isIt ? OB_SHORT_IT[need.priority] ?? need.priority : OB_SHORT_EN[need.priority] ?? need.priority)
         : "";
-      // Svuota il textbox id="5" (etichetta Obiettivo separata — ora è nel corpo)
+      // ── Helpers testo ──────────────────────────────────────────────────────────
+      // Run props Calibri 14pt normale e bold (leggermente ridotto per le 2 colonne)
+      const rpr  = `<a:rPr lang="it-IT" sz="1400" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
+      const rprBold = `<a:rPr lang="it-IT" sz="1400" b="1" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
+      const para      = (rprStr: string, text: string) =>
+        `<a:p><a:r>${rprStr}<a:t>${xmlEsc(text)}</a:t></a:r></a:p>`;
+      const paraEmpty = () => `<a:p><a:endParaRPr lang="it-IT" sz="1400" dirty="0"/></a:p>`;
+      const makeTxBody = (content: string) =>
+        `<a:bodyPr wrap="square" rtlCol="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>${content}`;
+
+      // ── Dati scenari ───────────────────────────────────────────────────────────
+      const selIdxs  = need ? (data.ucSelections?.[need.needId ?? ""] ?? []) : [];
+      const scenarios = need ? (data.ucScenarios?.[need.needId ?? ""] ?? []) : [];
+      // UC1, UC2 (massimo 2)
+      const ucPairs: Array<{ uc: string; colJ: string[] }> = selIdxs.length > 0
+        ? selIdxs.slice(0, 2).map(i => {
+            const ucText = scenarios[i] ?? "";
+            const needModules = need ? SCENARIO_MODULES[need.needId ?? ""] : undefined;
+            const raw = needModules?.[i] ?? "";
+            return { uc: ucText, colJ: raw ? raw.split("\\n").filter(Boolean) : [] };
+          })
+        : [{ uc: isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)", colJ: [] }];
+
+      // ── Shape id=5: "Obiettivo: <label>" su una riga ──────────────────────────
+      // Usa il textbox esistente id=5 allargandolo a tutta la larghezza
+      const obTxBody = makeTxBody(
+        `<a:p><a:r>${rprBold}<a:t>${xmlEsc(isIt ? "Obiettivo: " : "Objective: ")}</a:t></a:r>` +
+        `<a:r>${rpr}<a:t>${xmlEsc(obLabel)}</a:t></a:r></a:p>`
+      );
+      slideXml = slideXml.replace(
+        /(<p:cNvPr id="5"[^>]*>[\s\S]*?<a:off x=")\d+(" y=")\d+("\/><a:ext cx=")\d+(" cy=")\d+(")/,
+        `$1343787$21077433$3${11504427}$4338554$5`
+      );
       slideXml = slideXml.replace(
         /(<p:cNvPr id="5"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
-        `$1<a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/><a:p><a:endParaRPr lang="it-IT" sz="1600" dirty="0"/></a:p>$2`
+        `$1${obTxBody}$2`
       );
 
-      // ── Use case + Capacità: riscrive spPr + txBody del textbox id="6" ──────
-      const selIdxs = need ? (data.ucSelections?.[need.needId ?? ""] ?? []) : [];
-      const scenarios = need ? (data.ucScenarios?.[need.needId ?? ""] ?? []) : [];
-      const ucLines = selIdxs.length > 0
-        ? selIdxs.map(i => scenarios[i] ?? "").filter(Boolean)
-        : [(isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)")];
+      // ── Layout 2 colonne ───────────────────────────────────────────────────────
+      // 1 cm sotto obiettivo: y = 1077433 + 338554 + 360000 = 1775987 ≈ 1776000
+      const COL_Y     = 1776000;
+      const COL_SX_X  = 343786;
+      const COL_SX_CX = 5500000;
+      const COL_DX_X  = 6200000;
+      const COL_DX_CX = 5700000;
+      const COL_CY    = 4200000; // altezza colonne (si espande con autofit)
 
-      // Capacità: usa SCENARIO_MODULES (col J) per gli scenari selezionati
-      const needModules = need ? SCENARIO_MODULES[need.needId ?? ""] : undefined;
-      const modTexts = needModules && selIdxs.length > 0
-        ? [...new Set(selIdxs.map(i => needModules[i] ?? "").filter(Boolean))]
-        : needModules
-          ? [...new Set(needModules.filter(Boolean))]
-          : [];
-      const capText = modTexts.length > 0
-        ? modTexts.join("\\n")
-        : (isIt ? "(capacità da definire)" : "(capability to be defined)");
-      const capLines = capText.split(/\\n/).filter(Boolean);
+      // Colonna sinistra: "Use case attuale" + scenari
+      const sxContent =
+        para(rprBold, isIt ? "Use case attuale" : "Current use case") +
+        ucPairs.map((p, i) =>
+          (i > 0 ? paraEmpty() + paraEmpty() : "") +  // 2 righe vuote tra UC1 e UC2
+          para(rpr, p.uc)
+        ).join("");
+      const sxTxBody = makeTxBody(sxContent);
 
-      // Shorthand per costruire un run Calibri 16pt
-      const rpr = `<a:rPr lang="it-IT" sz="1600" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
-      const rprBold = `<a:rPr lang="it-IT" sz="1600" b="1" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
-      const para = (rprStr: string, text: string) =>
-        `<a:p><a:r>${rprStr}<a:t>${xmlEsc(text)}</a:t></a:r></a:p>`;
-      const paraEmpty = () => `<a:p><a:endParaRPr lang="it-IT" sz="1600" dirty="0"/></a:p>`;
+      // Colonna destra: "Use case evolutivo" + righe col J per ogni scenario
+      const dxContent =
+        para(rprBold, isIt ? "Use case evolutivo" : "Evolutionary use case") +
+        ucPairs.map((p, i) =>
+          (i > 0 ? paraEmpty() + paraEmpty() : "") +  // allineato con colonna sx
+          (p.colJ.length > 0
+            ? p.colJ.map(l => para(rpr, l)).join("")
+            : para(rpr, isIt ? "(non disponibile)" : "(not available)"))
+        ).join("");
+      const dxTxBody = makeTxBody(dxContent);
 
-      // Paragrafo con due run: "Obiettivo: " bold + valore normale — tutto su una riga
-      const paraInline = (boldRpr: string, normalRpr: string, label: string, value: string) =>
-        `<a:p><a:r>${boldRpr}<a:t>${xmlEsc(label)}</a:t></a:r><a:r>${normalRpr}<a:t>${xmlEsc(value)}</a:t></a:r></a:p>`;
-
-      const newTxBody =
-        `<a:bodyPr wrap="square" rtlCol="0"><a:spAutoFit/></a:bodyPr><a:lstStyle/>` +
-        // "Obiettivo: Compliance e reporting" tutto su una riga
-        paraInline(rprBold, rpr, isIt ? "Obiettivo: " : "Objective: ", obLabel) +
-        paraEmpty() +
-        // "Use case:" in grassetto + scenari su righe proprie (separati da riga vuota)
-        para(rprBold, "Use case:") +
-        ucLines.map(l => para(rpr, l)).join(paraEmpty()) +
-        paraEmpty() +
-        // "Capacità digitali necessarie:" in grassetto + capacità su righe proprie
-        para(rprBold, isIt ? "Capacità digitali necessarie:" : "Required digital capabilities:") +
-        capLines.map(l => para(rpr, l)).join("");
-
-      // Blocco corpo: y → 1100000 (alzato 2.5cm), cx → 6800000
+      // Shape id=6 → colonna sinistra
       slideXml = slideXml.replace(
-        /(<p:cNvPr id="6"[^>]*>[\s\S]*?<a:off x=")343786(" y=")\d+("\/><a:ext cx=")\d+(")/,
-        `$1343786$2${1100000}$3${6800000}$4`
+        /(<p:cNvPr id="6"[^>]*>[\s\S]*?<a:off x=")\d+(" y=")\d+("\/><a:ext cx=")\d+(" cy=")\d+(")/,
+        `$1${COL_SX_X}$2${COL_Y}$3${COL_SX_CX}$4${COL_CY}$5`
       );
-
-      // Sostituisce l'intero txBody del textbox id="6"
       slideXml = slideXml.replace(
         /(<p:cNvPr id="6"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
-        `$1${newTxBody}$2`
+        `$1${sxTxBody}$2`
       );
+
+      // Nuovo shape → colonna destra (aggiunto al spTree)
+      const dxShape =
+        `<p:sp><p:nvSpPr><p:cNvPr id="601" name="col_dx_${tplSlideIdx}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>` +
+        `<p:spPr><a:xfrm><a:off x="${COL_DX_X}" y="${COL_Y}"/><a:ext cx="${COL_DX_CX}" cy="${COL_CY}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>` +
+        `<p:txBody>${dxTxBody}</p:txBody></p:sp>`;
+      slideXml = slideXml.replace("</p:spTree>", dxShape + "</p:spTree>");
 
     } else {
       // Slide conclusioni
