@@ -1663,7 +1663,7 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     // The new template has logo_placeholder shape (id=99) in slide1, and
     // logo_company pictures (already embedded) in slides 5 and 6 — update their rId.
     // Slides 2,3,4 don't have a logo placeholder in the new template.
-    for (const i of [1, 2, 5, 6]) {
+    for (const i of [1, 2, 3, 4, 5, 6, 7]) {
       const relsPath = `ppt/slides/_rels/slide${i}.xml.rels`;
       const relsFile = zip.file(relsPath);
       if (!relsFile) continue;
