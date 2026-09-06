@@ -1,11 +1,11 @@
 import JSZip from "jszip";
 import type { SummaryPptxData } from "./generateSummaryPptx";
 import { SCENARIO_MODULES } from "./constants";
-import iconCredito    from "../public/icon-credito.png";
-import iconCompliance from "../public/icon-compliance.png";
-import iconClienti    from "../public/icon-clienti.png";
-import iconEnergia    from "../public/icon-energia.png";
-import iconSupply     from "../public/icon-supply.png";
+import iconCredito     from "../public/icon-credito.png";
+import iconCompliance  from "../public/icon-compliance.png";
+import iconClienti     from "../public/icon-clienti.png";
+import iconEnergia     from "../public/icon-energia.png";
+import iconSupply      from "../public/icon-supply.png";
 import iconReputazione from "../public/icon-reputazione.png";
 
 // ── Map PNG generator ─────────────────────────────────────────────────────────
