@@ -445,6 +445,24 @@ export default function Home(){
   const move=(index:number,direction:-1|1)=>{const next=[...priorities];const target=index+direction;if(target<0||target>=next.length)return;[next[index],next[target]]=[next[target],next[index]];setPriorities(next)};
   const saveOutcome=(outcome:Outcome)=>{const next={...missionOutcomes,[selectedMission]:outcome};setMissionOutcomes(next);localStorage.setItem("envizi-quest-roadmap",JSON.stringify(next))};
   const moveMission=(position:number,direction:-1|1)=>{const target=position+direction;if(target<0||target>=missionOrder.length)return;const next=[...missionOrder];[next[position],next[target]]=[next[target],next[position]];setMissionOrder(next);localStorage.setItem("envizi-quest-mission-order",JSON.stringify(next))};
+  // Ricalcola missionOrder quando si entra in roadmapPreview:
+  // Data Foundation (0) sempre prima, le altre 5 ordinate per somma R+C decrescente
+  useEffect(()=>{
+    if(screen!=="roadmapPreview") return;
+    const scoreByMission:Record<number,number>={};
+    [1,2,3,4,5].forEach(mi=>{
+      const needs=dataNeeds.filter(n=>isNeedIncluded(n.id)&&(needIdToMission[n.id]??0)===mi);
+      scoreByMission[mi]=needs.reduce((sum,n)=>{
+        const rel=Math.min(needRelevance[n.id]??5,10);
+        const crit=needCriticality[n.id]??5;
+        return sum+rel+crit;
+      },0);
+    });
+    const sorted=[1,2,3,4,5].sort((a,b)=>scoreByMission[b]-scoreByMission[a]);
+    const next=[0,...sorted];
+    setMissionOrder(next);
+    localStorage.setItem("envizi-quest-mission-order",JSON.stringify(next));
+  },[screen]);
   const updateParameter=(index:number,value:string)=>{const values=[...(missionParameters[selectedMission]||["","","",""])];values[index]=value;const next={...missionParameters,[selectedMission]:values};setMissionParameters(next);localStorage.setItem("envizi-quest-mission-parameters",JSON.stringify(next))};
   const extractMetricDefault=(metric:string):string=>{const m=metric.replace(/[€,]/g,"").match(/[\d]+(?:[.,]\d+)?/);return m?m[0].replace(",","."):"";};
   useEffect(()=>{if(screen==="asis"&&!missionParameters[selectedMission]?.some(v=>v)){const items=active.asIsItems;const defaults=items.map(item=>extractMetricDefault(item.metric));const next={...missionParameters,[selectedMission]:defaults};setMissionParameters(next);}},[screen,selectedMission]);

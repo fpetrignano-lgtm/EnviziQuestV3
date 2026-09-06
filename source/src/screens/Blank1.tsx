@@ -82,6 +82,17 @@ export function IlTuoReport({language,profile,setLanguage,setScreen,reset,render
         <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
       </header>
       <section style={{display:"flex",flexDirection:"column",alignItems:"center",gap:"12px",padding:"12px 0 20px",width:"100%",flex:1,minHeight:0}}>
+        <div style={{width:"100%",padding:"0 40px",flexShrink:0}}>
+          <h1 style={{margin:"0 0 6px",fontSize:"clamp(25px,2.24vw,33.6px)",fontWeight:700,color:"#e8f5ef",letterSpacing:"-.01em"}}>
+            {isIt?"Sintesi intermedia delle priorità":"Interim priorities summary"}
+          </h1>
+          <p style={{margin:0,fontSize:"clamp(17px,1.4vw,19.6px)",color:"#7db89a",lineHeight:1.4,maxWidth:"none"}}>
+            {isIt
+              ? <>Questo documento raccoglie gli obiettivi ESG selezionati, le esigenze di gestione dati prioritarie e la roadmap delle sfide operative.<br/>Verrà aggiornato automaticamente, riflettendo le nuove valutazioni e i progressi raggiunti. Seleziona «Genera e visualizza» oppure «Scarica il documento di presentazione».</>
+              : <>This document consolidates the selected ESG objectives, priority data management needs and operational challenge roadmap.<br/>It will be updated automatically, reflecting new ratings and progress made. Select «Generate & view» or «Download the presentation».</>
+            }
+          </p>
+        </div>
         <div style={{position:"relative",width:"100%",maxWidth:"none",flex:1,minHeight:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <img src="./logica-report-finale.png" alt={isIt?"Anteprima report":"Report preview"} style={{width:"100%",height:"100%",objectFit:"contain",borderRadius:"10px",boxShadow:"0 4px 32px rgba(0,0,0,.5)",display:"block"}}/>
         </div>
