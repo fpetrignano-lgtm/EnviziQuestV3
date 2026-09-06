@@ -954,8 +954,8 @@ export function PriorityMatrixScreen({
           <span className="pmFocusHint">{isIt?"(1 = nessun filtro · 10 = solo il massimo)":"(1 = no filter · 10 = max only)"}</span>
         </div>
         {/* SVG wrapped in a relative container for the arrow overlay */}
-        <div style={{position:"relative",width:"100%"}}>
-        <svg className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{transition:"viewBox .35s"}}>
+        <div className="pmSvgWrap">
+        <svg className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"100%",transition:"viewBox .35s"}}>
           {gridVals.map(v=><g key={v}>
             <line x1={toX(v)} y1={0} x2={toX(v)} y2={MATRIX_H} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
             <line x1={PAD_L} y1={toY(v)} x2={PAD_L+MATRIX_W} y2={toY(v)} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
@@ -1074,7 +1074,7 @@ export function PriorityMatrixScreen({
           })()}
         </svg>
         </div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 0 4px",width:"100%",gap:"16px",flexShrink:0}}>
           <p style={{margin:0,fontSize:"clamp(22px,1.9vw,26px)",color:"#5a9e88",lineHeight:1.45,maxWidth:"560px"}}>
             {ucNeeds.length>0&&!allUcDone
               ? (isIt
