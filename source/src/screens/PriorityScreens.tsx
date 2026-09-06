@@ -1125,7 +1125,7 @@ export function PriorityMatrixScreen({
           </p>
           {pmFromBriefing
             ? <button className="actionButton" style={{flexShrink:0,width:"auto"}} onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
-            : <button className="actionButton" style={{flexShrink:0,width:"auto",opacity:allUcDone?1:0.35,pointerEvents:allUcDone?"auto":"none",filter:allUcDone?"none":"grayscale(0.6)"}} onClick={()=>{if(allUcDone)setScreen("ilTuoReport");}}>{isIt?"Genera la sintesi e costruisci la roadmap":"Generate the summary and build the roadmap"}<b> →</b></button>
+            : <button className="actionButton" style={{flexShrink:0,width:"auto",opacity:(allUcDone&&highCount===5)?1:0.35,pointerEvents:(allUcDone&&highCount===5)?"auto":"none",filter:(allUcDone&&highCount===5)?"none":"grayscale(0.6)"}} onClick={()=>{if(allUcDone&&highCount===5)setScreen("ilTuoReport");}}>{isIt?"Genera la sintesi e costruisci la roadmap":"Generate the summary and build the roadmap"}<b> →</b></button>
           }
         </div>
         {pmSelected&&<div className="pmPopoverOverlay" onClick={()=>setPmSelected(null)}>
