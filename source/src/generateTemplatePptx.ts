@@ -1098,6 +1098,12 @@ async function appendReportFindings(
         xmlEsc(need ? need.label : "")
       );
 
+      // Riduce font titolo (shape id=4) al 80%: 2400 → 1920
+      slideXml = slideXml.replace(
+        /(<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:cNvPr[^>]*\bid="4"[^>]*>[\s\S]*?<\/p:sp>)/,
+        (spBlock) => spBlock.replace(/\bsz="2400"/g, `sz="1920"`)
+      );
+
        // Obiettivo — una riga sola, sostituisce solo il testo dopo "Obiettivo: "
       const OB_SHORT_IT: Record<string, string> = {
         credit:     "Accesso al credito e finanza ESG",
