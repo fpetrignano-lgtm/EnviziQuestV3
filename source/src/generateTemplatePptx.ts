@@ -283,49 +283,40 @@ function reduceSlide6TitleFont(xml: string): string {
   );
 }
 
-// ── Slide 4 framework visibility ─────────────────────────────────────────────
-// Each framework in the "IN USO" grid has a check mark shape (✓) and a name shape.
-// If the user did not select a framework (neither inUso nor diInteresse), blank its name
-// and blank the ✓ so the slot reads as empty.
-// The entire "DI INTERESSE" column (ids 35–40) is always removed.
-function processSlide4Frameworks(
-  xml: string,
-  frameworkChecks: Record<string, { inUso: boolean; diInteresse: boolean }> | undefined
-): string {
-  // Always remove the "DI INTERESSE" label + TCFD shapes + their dark background rect.
-  xml = removeShapesById(xml, [34, 35, 36, 37]);
+// ── Slide 4: inject fw.pptx template slide populated with user selections ──────
+// The fw-template.pptx is presented exactly as designed — only three things change:
+//   • shape id=2 (title)
+//   • shape id=3 (subtitle with company name)
+//   • col 3 (☑/☐ In uso) and col 4 (☑/☐ Di interesse) in each fw table row
+//
+// Table row → fw key mapping (rows 0, 4, 10, 13 are empty category separators):
+//   1=ghg  2=tcfd  3=cdp  5=gri  6=sasb  7=sdg  8=ifrs_s1  9=ifrs_s2
+//   11=sfdr  12=gresb  14=secr  15=energystar  16=nabers
+//
+// The fw-template.pptx must live at ./fw-template.pptx (served from public/).
 
-  // Remove the "Implicazione per il sistema dati" block (background rect + label + text)
-  // unless the user has 2 or more frameworks in use.
-  const inUsoCount = Object.values(frameworkChecks ?? {}).filter(f => f.inUso).length;
-  if (inUsoCount < 2) {
-    xml = removeShapesById(xml, [38, 39, 40]);
-  }
+const FW_ROW: Record<string, number> = {
+  ghg: 1, tcfd: 2, cdp: 3,
+  gri: 5, sasb: 6, sdg: 7, ifrs_s1: 8, ifrs_s2: 9,
+  sfdr: 11, gresb: 12,
+  secr: 14, energystar: 15, nabers: 16,
+};
 
-  if (!frameworkChecks) return xml;
+async function processSlide4FromFwTemplate(
+  mainZip: JSZip,
+  frameworkChecks: Record<string, { inUso: boolean; diInteresse: boolean }> | undefined,
+  companyName: string,
+  slideTitle: string,
+  isIt: boolean,
+): Promise<void> {
+  const res = await fetch(`./fw-template.pptx?v=${Date.now()}`);
+  if (!res.ok) return;
+  const fwBuf = await res.arrayBuffer();
+  const fwZip = await JSZip.loadAsync(fwBuf);
 
-  // fw key → { checkId, labelId } for the IN USO grid
-  const FW_MAP: Record<string, { checkId: number; labelId: number }> = {
-    gri:   { checkId:  8, labelId:  9 },
-    sasb:  { checkId: 12, labelId: 13 },
-    ghg:   { checkId: 16, labelId: 17 },
-    sdg:   { checkId: 20, labelId: 21 },
-    sfdr:  { checkId: 24, labelId: 25 },
-    secr:  { checkId: 28, labelId: 29 },
-    nabers:{ checkId: 32, labelId: 33 },
-  };
+  const checks = frameworkChecks ?? {};
 
-  // Framework extra (non hanno slot nel template) — label display
-  const FW_EXTRA_LABELS: Record<string, string> = {
-    tcfd:       "TCFD",
-    cdp:        "CDP",
-    gresb:      "GRESB",
-    energystar: "ENERGY STAR",
-    ifrs_s1:    "IFRS S1",
-    ifrs_s2:    "IFRS S2",
-  };
-
-  // Helper: replace all <a:t> text content inside a shape by id
+  // Helper: replace all <a:t> text in a shape by id, preserving original formatting
   const setShapeText = (xml: string, shapeId: number, text: string): string =>
     xml.replace(
       new RegExp(`(<p:sp>(?:(?!<p:sp>)[\\s\\S])*?<p:cNvPr[^>]*\\bid="${shapeId}"[^>]*>[\\s\\S]*?)<p:txBody>[\\s\\S]*?<\\/p:txBody>(<\\/p:sp>)`),
@@ -333,42 +324,108 @@ function processSlide4Frameworks(
         const origBody = match.match(/<p:txBody>([\s\S]*?)<\/p:txBody>/)?.[1] || "";
         const bodyPr   = origBody.match(/(<a:bodyPr[\s\S]*?<\/a:bodyPr>|<a:bodyPr[^/]*\/>)/)?.[0] || "<a:bodyPr/>";
         const rPr      = origBody.match(/(<a:rPr[\s\S]*?<\/a:rPr>|<a:rPr[^/]*\/>)/)?.[0] || "";
-        const newBody  = `<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:r>${rPr}<a:t>${escapeXml(text)}</a:t></a:r></a:p></p:txBody>`;
-        return `${pre}${newBody}${post}`;
+        return `${pre}<p:txBody>${bodyPr}<a:lstStyle/><a:p><a:r>${rPr}<a:t>${escapeXml(text)}</a:t></a:r></a:p></p:txBody>${post}`;
       }
     );
 
-  for (const [fwKey, { checkId, labelId }] of Object.entries(FW_MAP)) {
-    const state = frameworkChecks[fwKey] ?? { inUso: false, diInteresse: false };
-    if (!state.inUso) {
-      // not selected — blank out both check mark and label
-      xml = setShapeText(xml, checkId, "");
-      xml = setShapeText(xml, labelId, "");
+  const slideFile = fwZip.file("ppt/slides/slide1.xml");
+  if (!slideFile) return;
+  let slideXml = await slideFile.async("string");
+
+  // ── 1. Replace title and subtitle ───────────────────────────────────────────
+  slideXml = setShapeText(slideXml, 2, slideTitle);
+  slideXml = setShapeText(slideXml, 3,
+    isIt
+      ? `Framework dichiarati nel questionario Envizi Quest — ${companyName}`
+      : `Frameworks declared in the Envizi Quest questionnaire — ${companyName}`
+  );
+
+  // ── 2. Set ☑/☐ in table col 3 (In uso) and col 4 (Di interesse) ─────────────
+  // Replace each <a:tr> for fw rows only; separator rows are left unchanged.
+  slideXml = slideXml.replace(/<a:tr\b[^>]*>[\s\S]*?<\/a:tr>/g, (rowXml, offset, fullXml) => {
+    const rowIdx = (fullXml.slice(0, offset).match(/<a:tr\b/g) || []).length;
+    const fwKey = Object.entries(FW_ROW).find(([, r]) => r === rowIdx)?.[0];
+    if (!fwKey) return rowXml; // separator — untouched
+
+    const state = checks[fwKey] ?? { inUso: false, diInteresse: false };
+
+    // Extract cells, patch only col 3 and col 4 checkbox symbol
+    const cells: string[] = [];
+    const cellRe = /<a:tc>[\s\S]*?<\/a:tc>/g;
+    let m: RegExpExecArray | null;
+    const inner = rowXml.replace(/^<a:tr\b[^>]*>/, "").replace(/<\/a:tr>$/, "");
+    while ((m = cellRe.exec(inner)) !== null) cells.push(m[0]);
+
+    const setCheck = (cell: string, checked: boolean) =>
+      cell.replace(/<a:t>[☐☑]<\/a:t>/, `<a:t>${checked ? "☑" : "☐"}</a:t>`);
+
+    if (cells[3]) cells[3] = setCheck(cells[3], state.inUso);
+    if (cells[4]) cells[4] = setCheck(cells[4], state.diInteresse);
+
+    const trOpen = rowXml.match(/^<a:tr\b[^>]*>/)?.[0] ?? "<a:tr>";
+    return `${trOpen}${cells.join("")}</a:tr>`;
+  });
+
+  // ── Copy fw template slide XML into main report at slide4 position ──────────
+  // The fw template has its own slide master/layout — we embed just the spTree
+  // content into the existing slide4 of the main report to preserve its rels.
+  const spTreeMatch = slideXml.match(/<p:spTree>[\s\S]*?<\/p:spTree>/);
+  if (!spTreeMatch) return;
+
+  const mainSlide4File = mainZip.file("ppt/slides/slide4.xml");
+  if (!mainSlide4File) return;
+  let mainSlide4Xml = await mainSlide4File.async("string");
+
+  // Replace the spTree in the main slide4 with the one from fw-template
+  mainSlide4Xml = mainSlide4Xml.replace(/<p:spTree>[\s\S]*?<\/p:spTree>/, spTreeMatch[0]);
+
+  // Copy any images from fw-template media that are referenced in the slide
+  const fwRelsFile = fwZip.file("ppt/slides/_rels/slide1.xml.rels");
+  if (fwRelsFile) {
+    const fwRelsXml = await fwRelsFile.async("string");
+    const imgRels = [...fwRelsXml.matchAll(/Id="([^"]+)"[^>]*Target="\.\.\/media\/([^"]+)"/g)];
+    for (const [, rId, mediaName] of imgRels) {
+      const mediaFile = fwZip.file(`ppt/media/${mediaName}`);
+      if (!mediaFile) continue;
+      const mediaBytes = await mediaFile.async("uint8array");
+      // Add media to main zip
+      const destPath = `ppt/media/fw_${mediaName}`;
+      mainZip.file(destPath, mediaBytes);
+
+      // Register content type if needed
+      const ctFile = mainZip.file("[Content_Types].xml");
+      if (ctFile) {
+        let ctXml = await ctFile.async("string");
+        const ext = mediaName.split(".").pop() || "png";
+        if (!ctXml.includes(`Extension="${ext}"`)) {
+          ctXml = ctXml.replace("</Types>", `<Default Extension="${ext}" ContentType="image/${ext === "jpg" ? "jpeg" : ext}"/></Types>`);
+          mainZip.file("[Content_Types].xml", ctXml);
+        }
+      }
+
+      // Update rId in slide4 to point to new media path and add relationship
+      const s4RelsPath = "ppt/slides/_rels/slide4.xml.rels";
+      const s4RelsFile = mainZip.file(s4RelsPath);
+      if (s4RelsFile) {
+        let s4Rels = await s4RelsFile.async("string");
+        const newRid = `rId_fw_${rId}`;
+        if (!s4Rels.includes(newRid)) {
+          s4Rels = s4Rels.replace(
+            "</Relationships>",
+            `<Relationship Id="${newRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/fw_${mediaName}"/></Relationships>`
+          );
+          mainZip.file(s4RelsPath, s4Rels);
+        }
+        // Patch the r:embed reference in the slide XML (picture shape uses rId3 in fw-template)
+        mainSlide4Xml = mainSlide4Xml.replace(
+          new RegExp(`r:embed="${rId}"`, "g"),
+          `r:embed="${newRid}"`
+        );
+      }
     }
   }
 
-  // Extra frameworks (TCFD, CDP, GRESB, ENERGY STAR, IFRS S1, IFRS S2):
-  // collect those selected (inUso or diInteresse) and append them to the
-  // "Implicazione per il sistema dati" text block (shape id=40), which is
-  // already shown when inUsoCount >= 2. When no extra fw are selected the
-  // block keeps its original template text.
-  const extraInUso     = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.inUso).map(([,l]) => l);
-  const extraInteresse = Object.entries(FW_EXTRA_LABELS).filter(([k]) => frameworkChecks[k]?.diInteresse).map(([,l]) => l);
-  if ((extraInUso.length > 0 || extraInteresse.length > 0) && inUsoCount >= 2) {
-    const parts: string[] = [];
-    if (extraInUso.length > 0)     parts.push(`In uso: ${extraInUso.join(", ")}`);
-    if (extraInteresse.length > 0) parts.push(`Di interesse: ${extraInteresse.join(", ")}`);
-    xml = setShapeText(xml, 40, `Altri framework selezionati — ${parts.join(" · ")}`);
-  } else if (extraInUso.length > 0 || extraInteresse.length > 0) {
-    // inUsoCount < 2 but extra fw selected — block was removed; inject a new small shape
-    const parts: string[] = [];
-    if (extraInUso.length > 0)     parts.push(`In uso: ${extraInUso.join(", ")}`);
-    if (extraInteresse.length > 0) parts.push(`Di interesse: ${extraInteresse.join(", ")}`);
-    const extraShapeXml = `<p:sp><p:nvSpPr><p:cNvPr id="998" name="fw_extra"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr><p:spPr><a:xfrm><a:off x="419100" y="5700000"/><a:ext cx="11353800" cy="380000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr><p:txBody><a:bodyPr><a:normAutofit/></a:bodyPr><a:lstStyle/><a:p><a:pPr algn="l"/><a:r><a:rPr lang="it-IT" sz="1100" b="0" dirty="0"><a:solidFill><a:srgbClr val="7ecfb8"/></a:solidFill></a:rPr><a:t>${escapeXml(`Altri framework selezionati — ${parts.join(" · ")}`)}</a:t></a:r></a:p></p:txBody></p:sp>`;
-    xml = xml.replace("</p:spTree>", `${extraShapeXml}</p:spTree>`);
-  }
-
-  return xml;
+  mainZip.file("ppt/slides/slide4.xml", mainSlide4Xml);
 }
 
 // ── Slide 3 geo table replacement ─────────────────────────────────────────────
@@ -1043,26 +1100,6 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     "Erica non rientra indicativamente nel perimetro CSRD 2026, ma vuole avvicinarsi gradualmente ai requisiti europei e rispondere alle richieste degli stakeholder.":
       csrdDecision,
 
-    // ── Slide 4 (frameworks) ──
-    "Erica usa più framework e vuole aggiungere una vista strutturata sul rischio climatico":
-      (() => {
-        const fwChecks = data.frameworkChecks ?? {};
-        const inUsoCount = Object.values(fwChecks).filter(f => f.inUso).length;
-        if (inUsoCount === 0) {
-          return isIt
-            ? `${resolvedCompanyName} non usa ancora framework ESG strutturati e vuole iniziare a impostare una base di riferimento`
-            : `${resolvedCompanyName} does not yet use structured ESG frameworks and wants to start building a reference baseline`;
-        } else if (inUsoCount === 1) {
-          return isIt
-            ? `${resolvedCompanyName} usa un unico framework ESG`
-            : `${resolvedCompanyName} uses a single ESG framework`;
-        } else {
-          return isIt
-            ? `${resolvedCompanyName} usa più framework ESG ed è necessario allineare le risposte in modo coerente`
-            : `${resolvedCompanyName} uses multiple ESG frameworks and responses need to be aligned in a coherent way`;
-        }
-      })(),
-
     // ── Slide 5 (priorities) ──
     // Intro title
     "La priorità principale di Nat 1 è Compliance e reporting seguita da Accesso al credito, evidenziando il valore di ESG per il business.":
@@ -1360,10 +1397,8 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
       );
     }
 
-    // Slide 4: show only the frameworks the user actually selected
-    if (i === 4) {
-      xmlStr = processSlide4Frameworks(xmlStr, data.frameworkChecks);
-    }
+    // Slide 4 is handled separately via processSlide4FromFwTemplate (called after this loop)
+    if (i === 4) continue;
 
     // Slide 5: remap priority icons + nudge reputazione note downward
     if (i === 5) {
@@ -1430,6 +1465,24 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     if (i === 6) final = replaceSlide6NeedsList(final, data.critItems, isIt);
 
     zip.file(path, final);
+  }
+
+  // ── Slide 4: populate from fw-template.pptx ─────────────────────────────────
+  {
+    const fwChecks = data.frameworkChecks ?? {};
+    const inUsoCount4 = Object.values(fwChecks).filter(f => f.inUso).length;
+    const slide4Title = inUsoCount4 === 0
+      ? (isIt
+          ? `${resolvedCompanyName} non usa ancora framework ESG strutturati`
+          : `${resolvedCompanyName} does not yet use structured ESG frameworks`)
+      : inUsoCount4 === 1
+        ? (isIt
+            ? `${resolvedCompanyName} usa un unico framework ESG`
+            : `${resolvedCompanyName} uses a single ESG framework`)
+        : (isIt
+            ? `${resolvedCompanyName} usa più framework ESG ed è necessario allineare le risposte in modo coerente`
+            : `${resolvedCompanyName} uses multiple ESG frameworks and responses need to be aligned in a coherent way`);
+    await processSlide4FromFwTemplate(zip, data.frameworkChecks, resolvedCompanyName, slide4Title, isIt);
   }
 
   // Generate and download

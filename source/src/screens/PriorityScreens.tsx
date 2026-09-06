@@ -9,9 +9,10 @@ type NeedsByMission = [number, (NeedItem & { rank: number })[]][];
 
 interface ApproachDataCopyProps extends CommonProps {
   t: Record<string, any>;
+  onContinue?: () => void;
 }
 
-export function ApproachDataCopyScreen({ language, setLanguage, setScreen, reset, t }: ApproachDataCopyProps) {
+export function ApproachDataCopyScreen({ language, setLanguage, setScreen, reset, t, onContinue }: ApproachDataCopyProps) {
   const isIt = language === "it";
   const [zoomWarnOpen,setZoomWarnOpen]=React.useState(false);
   React.useEffect(()=>{
@@ -32,7 +33,7 @@ export function ApproachDataCopyScreen({ language, setLanguage, setScreen, reset
       <div className="approachIntroLeft">
         <h1 className="approachIntroTitle">{t.approachDataTitle}</h1>
         <div className="approachIntroText">{(t.approachDataBody as string[]).map((para,i)=><p key={i}>{para}</p>)}</div>
-        <button className="actionButton approachIntroCta" onClick={()=>setScreen("priorityData")}>{t.approachDataCta}<b>→</b></button>
+        <button className="actionButton approachIntroCta" onClick={()=>onContinue ? onContinue() : setScreen("priorityData")}>{t.approachDataCta}<b>→</b></button>
       </div>
       <div className="approachIntroRight">
         <img src="./step-2.svg" className="approachIntroStepBadge" alt="Step 2"/>
@@ -65,6 +66,7 @@ interface PrioritiesProps extends CommonProps {
   name: string;
   onSave?: (name: string) => void;
   defaultSaveName?: string;
+  skipDataCopyIntro?: boolean;
 }
 
 export function PrioritiesScreen({
@@ -72,7 +74,7 @@ export function PrioritiesScreen({
   priorities, priorityIncluded, togglePriorityIncluded, rankPriority,
   prioExperience, setPrioExpModal, prioExpModal, prioExpMode, setPrioExpMode,
   prioExpSelected, setPrioExpSelected, setPrioExperience, prioDefaultExp,
-  displayCompanyName, t, name, onSave, defaultSaveName,
+  displayCompanyName, t, name, onSave, defaultSaveName, skipDataCopyIntro,
 }: PrioritiesProps) {
   const isIt = language === "it";
   const prioImg: Record<Priority, string> = {credit:"./obj-credit.png",compliance:"./obj-compliance.png",customers:"./obj-customers.png",efficiency:"./obj-efficiency.png",supply:"./obj-supply.png",reputation:"./obj-reputation.png"};
@@ -133,7 +135,23 @@ export function PrioritiesScreen({
             </div>
           ))}
         </div>
-        <button className="actionButton prioCardsConfirmBtn" onClick={()=>{localStorage.setItem("envizi-quest-priorities",JSON.stringify(priorities));setScreen("approachDataCopy")}}>{isIt?"Avanti":"Next"}<b>→</b></button>
+        {Object.values(priorityIncluded).filter(Boolean).length > 3 && (
+          <div style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"12px 16px",marginBottom:"12px",borderRadius:"10px",background:"rgba(251,191,36,.08)",border:"1px solid rgba(251,191,36,.35)",color:"#fbbf24",fontSize:"26px",lineHeight:1.5}}>
+            <span style={{fontSize:"32px",flexShrink:0,marginTop:"1px"}}>💡</span>
+            <span>{isIt?"Hai selezionato più di 3 obiettivi ESG. Per un'analisi più focalizzata ti suggeriamo di scegliere al massimo 3 priorità.":"You've selected more than 3 ESG objectives. For a more focused analysis, we suggest choosing at most 3 priorities."}</span>
+          </div>
+        )}
+        {Object.values(priorityIncluded).filter(Boolean).length === 0 && (
+          <div style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"12px 16px",marginBottom:"12px",borderRadius:"10px",background:"rgba(100,116,139,.08)",border:"1px solid rgba(100,116,139,.35)",color:"#94a3b8",fontSize:"26px",lineHeight:1.5}}>
+            <span style={{fontSize:"32px",flexShrink:0,marginTop:"1px"}}>ℹ️</span>
+            <span>{isIt?"Seleziona almeno un obiettivo ESG per procedere all'analisi.":"Select at least one ESG objective to proceed with the analysis."}</span>
+          </div>
+        )}
+        <button
+          className="actionButton prioCardsConfirmBtn"
+          disabled={Object.values(priorityIncluded).filter(Boolean).length === 0}
+          onClick={()=>{localStorage.setItem("envizi-quest-priorities",JSON.stringify(priorities));setScreen(skipDataCopyIntro?"priorityData":"approachDataCopy");}}
+        >{isIt?"Avanti":"Next"}<b>→</b></button>
       </div>
     </div>
     {prioExpModal&&(()=>{
@@ -236,6 +254,24 @@ export function PriorityDataScreen({
   const colItems = dataNeeds.filter(n => n.priority === p);
   const isPriorityDisabled = !(priorityIncluded[p] ?? true);
 
+  // Contatore totale esigenze incluse (deduplicato per label)
+  const totalIncluded = React.useMemo(() => {
+    const seenLabels = new Set<string>();
+    let count = 0;
+    priorities.forEach(prio => {
+      dataNeeds.filter(n => n.priority === prio).forEach(item => {
+        if (!isNeedIncluded(item.id)) return;
+        if (seenLabels.has(item.label)) return;
+        seenLabels.add(item.label);
+        count++;
+      });
+      // custom row per questa priority
+      const cId = `custom-${prio}`;
+      if (isNeedIncluded(cId) && customLabels[prio]?.trim()) count++;
+    });
+    return count;
+  }, [priorities, dataNeeds, needIncluded, customLabels]);
+
   // id sintetico per la riga custom di questa priority
   const customId = `custom-${p}`;
 
@@ -257,6 +293,23 @@ export function PriorityDataScreen({
 
   // Quando cambia slide, azzera la selezione
   React.useEffect(()=>{ setSelectedNeedId(null); }, [slideIdx]);
+  const [matrixBlockWarn, setMatrixBlockWarn] = React.useState(false);
+  const goToMatrix = () => {
+    const seenLabels = new Set<string>();
+    let count = 0;
+    priorities.forEach(prio => {
+      dataNeeds.filter(n => n.priority === prio).forEach(item => {
+        if (!(needIncluded[item.id] ?? false)) return;
+        if (seenLabels.has(item.label)) return;
+        seenLabels.add(item.label);
+        count++;
+      });
+      const cId = `custom-${prio}`;
+      if ((needIncluded[cId] ?? false) && customLabels[prio]?.trim()) count++;
+    });
+    if(count<5){ setMatrixBlockWarn(true); return; }
+    setScreen("priorityMatrix");
+  };
   const [zoomWarnOpen,setZoomWarnOpen]=React.useState(false);
   React.useEffect(()=>{
     const handler=(e:KeyboardEvent)=>{
@@ -325,6 +378,10 @@ export function PriorityDataScreen({
       <button className="brand brandButton" onClick={reset}><span className="brandMark">e·</span><span>Envizi<br/>Impact Quest</span></button>
       <div className="missionProgress"><span className="activeDot"/> DATA NEEDS</div>
       {renderTrustBar()}
+      <div style={{display:"flex",alignItems:"center",gap:"6px",padding:"4px 12px",borderRadius:"20px",background:"rgba(57,239,180,.10)",border:"1px solid rgba(57,239,180,.28)",whiteSpace:"nowrap"}}>
+        <span style={{fontSize:"11px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".08em",textTransform:"uppercase",color:"#39efb4",opacity:.75}}>{isIt?"Incluse":"Included"}</span>
+        <span style={{fontSize:"15px",fontWeight:700,color:"#39efb4",fontVariantNumeric:"tabular-nums",minWidth:"1.6em",textAlign:"center"}}>{totalIncluded}</span>
+      </div>
       <button className="langMini" onClick={()=>setLanguage(language==="it"?"en":"it")}>{language==="it"?"EN":"IT"}</button>
     </header>
 
@@ -350,10 +407,28 @@ export function PriorityDataScreen({
         <div className="pdSlideNavBtns">
           <button className="pdSlideNavBtn" onClick={()=>{ if(slideIdx===0) goBack(); else setSlideIdx(i=>i-1); }}>←</button>
           <span className="pdSlideNavCount">{slideIdx+1} / {totalSlides}</span>
-          <button className="pdSlideNavBtn" onClick={()=>{ if(slideIdx===totalSlides-1) setScreen("priorityMatrix"); else setSlideIdx(i=>i+1); }}>→</button>
+          <button
+            className="pdSlideNavBtn"
+            onClick={()=>{ if(slideIdx===totalSlides-1) goToMatrix(); else setSlideIdx(i=>i+1); }}
+          >→</button>
         </div>
       </div>
     </div>
+    {matrixBlockWarn && (
+      <div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(7,18,15,.82)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setMatrixBlockWarn(false)}>
+        <div style={{background:"#0d1f19",border:"1px solid rgba(251,191,36,.4)",borderRadius:"14px",padding:"32px 36px",maxWidth:"400px",width:"90vw",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,.6)"}} onClick={e=>e.stopPropagation()}>
+          <p style={{margin:"0 0 6px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".14em",textTransform:"uppercase",color:"#fbbf24"}}>{isIt?"Attenzione":"Warning"}</p>
+          <p style={{margin:"0 0 6px",fontSize:"22px"}}>⚠</p>
+          <p style={{margin:"0 0 20px",fontSize:"15px",color:"#e8f5ef",lineHeight:1.6}}>
+            {isIt
+              ? <><strong style={{color:"#fbbf24"}}>{totalIncluded}</strong> {totalIncluded===1?"esigenza inclusa":"esigenze incluse"}. Devi includere nell'analisi <strong style={{color:"#39efb4"}}>almeno 5 esigenze</strong> di gestione dati prima di accedere alla matrice di priorità.</>
+              : <><strong style={{color:"#fbbf24"}}>{totalIncluded}</strong> {totalIncluded===1?"need included":"needs included"}. You need to include <strong style={{color:"#39efb4"}}>at least 5 data management needs</strong> before accessing the priority matrix.</>
+            }
+          </p>
+          <button style={{padding:"10px 28px",borderRadius:"8px",border:"1px solid rgba(57,239,180,.35)",background:"transparent",color:"#39efb4",fontSize:"14px",cursor:"pointer",fontFamily:"inherit"}} onClick={()=>setMatrixBlockWarn(false)}>{isIt?"Torna alla selezione":"Back to selection"}</button>
+        </div>
+      </div>
+    )}
 
     {/* ── Corpo: lista items + colonna destra fissa ── */}
     <div className="pdSlideBody">
@@ -385,7 +460,7 @@ export function PriorityDataScreen({
                 : <button
                     className="actionButton"
                     style={{fontSize:"clamp(12px,1vw,14px)",padding:"8px 20px"}}
-                    onClick={()=>setScreen("priorityMatrix")}
+                    onClick={goToMatrix}
                   >
                     {isIt?"Vai alla matrice →":"Go to matrix →"}
                   </button>
@@ -700,7 +775,7 @@ export function PriorityDataScreen({
           <button className="secondaryAction" style={{fontSize:"clamp(12px,1vw,14px)",padding:"10px 12px",width:"100%"}} onClick={exportDataNeedsCsv}>↓ {isIt?"Esporta CSV":"Export CSV"}</button>
           {slideIdx < totalSlides-1
             ? <button className="actionButton" style={{width:"100%"}} onClick={()=>setSlideIdx(i=>i+1)}>{isIt?"Prossimo obiettivo →":"Next objective →"}</button>
-            : <button className="actionButton" style={{width:"100%"}} onClick={()=>setScreen("priorityMatrix")}>{t.priorityDataCta}<b>→</b></button>
+            : <button className="actionButton" style={{width:"100%"}} onClick={goToMatrix}>{isIt?"Vai alla matrice":"Go to matrix"}<b>→</b></button>
           }
         </div>
       </div>

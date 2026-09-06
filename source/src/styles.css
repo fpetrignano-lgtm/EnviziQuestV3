@@ -1496,3 +1496,4 @@ body{font-size:18px}.eyebrow{font-size:22px}.brand{font-size:14px}.step,.mission
 .globalSaveConfirm:disabled{opacity:.4;cursor:not-allowed}
 .globalSaveCancel{background:transparent;color:rgba(57,239,180,.5);border:none;padding:2px 6px;font-size:13px;cursor:pointer;line-height:1}
 .globalSaveCancel:hover{color:#39efb4}
+.actionButton:disabled{opacity:.38;cursor:not-allowed;pointer-events:none;}

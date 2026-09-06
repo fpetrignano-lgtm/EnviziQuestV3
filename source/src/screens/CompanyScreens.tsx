@@ -456,22 +456,22 @@ export function CompanyScreen({
       </span>
     </div>;
   };
-  // Copertura Envizi per framework
-  type FwCov = {level:"alto"|"medio"|"limitato"; it:string; en:string};
+  // Note sui framework
+  type FwCov = {it:string; en:string};
   const FW_ENVIZI_COV: Record<string,FwCov> = {
-    ghg:        {level:"alto",    it:"Calcolo Scope 1, 2 e principali categorie Scope 3 con fattori gestiti centralmente.",                         en:"Scope 1, 2 and key Scope 3 categories with centrally managed emission factors."},
-    tcfd:       {level:"medio",   it:"Supporta la raccolta di dati climatici e la disclosure. Framework ampiamente adottato in passato; le sue raccomandazioni sono oggi incorporate in IFRS S1 e S2.", en:"Supports climate data collection and disclosure. Widely adopted in the past; its recommendations are now incorporated into IFRS S1 and S2."},
-    cdp:        {level:"medio",   it:"Facilita la preparazione dei dati richiesti dal questionario CDP; la compilazione e l'invio restano manuali.",    en:"Helps prepare data for the CDP questionnaire; submission remains a manual step."},
-    gri:        {level:"alto",    it:"Raccolta e aggregazione dei principali indicatori GRI con tracciabilità dalla fonte.",                            en:"Collection and aggregation of key GRI indicators with source traceability."},
-    sasb:       {level:"medio",   it:"Supporta la raccolta degli indicatori settoriali SASB; la mappatura ai topic standard è a carico dell'utente.",   en:"Supports collection of SASB sector indicators; mapping to standard topics is the user's responsibility."},
-    sdg:        {level:"limitato",it:"Può fornire dati di base utili al reporting SDG, ma non offre una mappatura strutturata agli obiettivi ONU.",     en:"Can provide basic data useful for SDG reporting, but does not offer structured mapping to UN goals."},
-    ifrs_s1:    {level:"medio",   it:"Supporta la raccolta di dati su rischi e opportunità ESG richiesti da IFRS S1; la narrativa resta all'azienda.", en:"Supports collection of ESG risk and opportunity data required by IFRS S1; narrative disclosure remains with the organisation."},
-    ifrs_s2:    {level:"medio",   it:"Facilita la raccolta di metriche climatiche allineate a IFRS S2; l'analisi degli scenari è esterna al sistema.", en:"Facilitates collection of climate metrics aligned with IFRS S2; scenario analysis sits outside the system."},
-    sfdr:       {level:"limitato",it:"Può fornire dati ambientali e sociali utili agli indicatori PAI; la struttura SFDR richiede integrazione esterna.",en:"Can supply environmental and social data useful for PAI indicators; SFDR structure requires external integration."},
-    gresb:      {level:"medio",   it:"Supporta la raccolta di dati energetici e di emissione per immobili e infrastrutture richiesti da GRESB.",        en:"Supports collection of energy and emission data for real estate and infrastructure assets required by GRESB."},
-    secr:       {level:"alto",    it:"Calcolo e reportistica di energia e carbonio per le entità soggette al regime SECR nel Regno Unito.",             en:"Energy and carbon calculation and reporting for entities subject to the UK SECR regime."},
-    energystar: {level:"medio",   it:"Raccolta e aggregazione dei dati energetici necessari; la certificazione ENERGY STAR avviene tramite EPA Portfolio Manager.", en:"Collection and aggregation of required energy data; ENERGY STAR certification occurs via EPA Portfolio Manager."},
-    nabers:     {level:"medio",   it:"Supporta la raccolta dei dati energetici per gli edifici; la valutazione NABERS è effettuata da un assessor esterno.", en:"Supports energy data collection for buildings; NABERS rating is carried out by an external assessor."},
+    ghg:        {it:"Calcolo Scope 1, 2 e principali categorie Scope 3 con fattori gestiti centralmente.",                         en:"Scope 1, 2 and key Scope 3 categories with centrally managed emission factors."},
+    tcfd:       {it:"Framework ampiamente adottato in passato per la disclosure climatica; le sue raccomandazioni sono oggi incorporate in IFRS S1 e S2.", en:"Widely adopted framework for climate disclosure; its recommendations are now incorporated into IFRS S1 and S2."},
+    cdp:        {it:"Questionario annuale di rendicontazione ambientale richiesto da investitori e clienti; facilita la trasparenza su clima, acqua e foreste.", en:"Annual environmental disclosure questionnaire requested by investors and clients; facilitates transparency on climate, water and forests."},
+    gri:        {it:"Standard globale per la rendicontazione di sostenibilità; copre temi economici, ambientali e sociali con indicatori comparabili.", en:"Global standard for sustainability reporting; covers economic, environmental and social topics with comparable indicators."},
+    sasb:       {it:"Standard settoriali che identificano gli indicatori ESG finanziariamente rilevanti per ogni industria.",   en:"Industry-specific standards identifying financially material ESG indicators for each sector."},
+    sdg:        {it:"I 17 Obiettivi di Sviluppo Sostenibile delle Nazioni Unite; usati per collegare le attività aziendali all'agenda globale.",     en:"The 17 UN Sustainable Development Goals; used to link company activities to the global agenda."},
+    ifrs_s1:    {it:"Standard ISSB per la disclosure generale di rischi e opportunità ESG rilevanti per gli investitori.", en:"ISSB standard for general disclosure of ESG risks and opportunities material to investors."},
+    ifrs_s2:    {it:"Standard ISSB specifico per il clima; richiede disclosure su governance, strategia, gestione del rischio e metriche climatiche.", en:"ISSB climate-specific standard; requires disclosure on governance, strategy, risk management and climate metrics."},
+    sfdr:       {it:"Regolamento UE che impone ai gestori di fondi la disclosure sui rischi di sostenibilità e sugli impatti negativi degli investimenti.", en:"EU regulation requiring fund managers to disclose sustainability risks and principal adverse impacts of investments."},
+    gresb:      {it:"Benchmark internazionale per la valutazione della performance ESG nel settore immobiliare e delle infrastrutture.",        en:"International benchmark for assessing ESG performance in real estate and infrastructure."},
+    secr:       {it:"Obbligo UK di rendicontare consumi energetici e emissioni di carbonio nel report annuale; si applica alle società quotate e alle grandi imprese.",             en:"UK requirement to report energy consumption and carbon emissions in the annual report; applies to quoted companies and large businesses."},
+    energystar: {it:"Programma di certificazione energetica statunitense per edifici e prodotti; gestito dall'EPA tramite Portfolio Manager.", en:"US energy certification programme for buildings and products; managed by the EPA via Portfolio Manager."},
+    nabers:     {it:"Sistema australiano di valutazione della performance energetica degli edifici commerciali; la valutazione è effettuata da un assessor accreditato.", en:"Australian rating system for energy performance of commercial buildings; rating is carried out by an accredited assessor."},
   };
 
   // Dati dei modal — definiti qui (scope componente) perché i modal sono figli diretti del <main>
@@ -786,7 +786,7 @@ export function CompanyScreen({
             <tr>
               <th className="fwThLabel">{isIt?"Framework / requisito":"Framework / requirement"}</th>
               <th className="fwThArea">Area</th>
-              <th className="fwThEnvizi">{isIt?"Copertura Envizi":"Envizi Coverage"}</th>
+              <th className="fwThEnvizi">{isIt?"Note":"Notes"}</th>
               <th className="fwThCheck">{isIt?"In uso":"In use"}</th>
               <th className="fwThCheck">{isIt?"Di interesse":"Of interest"}</th>
             </tr>
@@ -799,11 +799,6 @@ export function CompanyScreen({
                 </tr>
                 {group.rows.map(({id,label,area,legacy})=>{
                   const cov = FW_ENVIZI_COV[id];
-                  const lvlColor = cov?.level==="alto"?"#39efb4":cov?.level==="medio"?"#fbbf24":"#9ca3af";
-                  const lvlLabel = cov ? (isIt
-                    ? cov.level==="alto"?"Alto":cov.level==="medio"?"Medio":"Limitato"
-                    : cov.level==="alto"?"High":cov.level==="medio"?"Medium":"Limited"
-                  ) : "—";
                   return (
                   <tr key={id} className="fwRow">
                     <td className="fwTdLabel">
@@ -812,7 +807,6 @@ export function CompanyScreen({
                     </td>
                     <td className="fwTdArea">{area}</td>
                     <td className="fwTdEnvizi">
-                      {cov&&<span className="fwEnviziLevel" style={{color:lvlColor,borderColor:lvlColor}}>{lvlLabel}</span>}
                       {cov&&<span className="fwEnviziDesc">{isIt?cov.it:cov.en}</span>}
                     </td>
                     <td className="fwTdCheck"><button className={`fwCheck${frameworkChecks[id]?.inUso?" fwCheckOn":""}`} onClick={e=>{e.stopPropagation();toggleFw(id,"inUso");}}>{frameworkChecks[id]?.inUso?"☑":"☐"}</button></td>
