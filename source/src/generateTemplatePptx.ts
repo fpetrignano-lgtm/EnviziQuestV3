@@ -1282,6 +1282,27 @@ async function appendReportFindings(
         ""
       );
     }
+    // ── Inietta logo aziendale se presente ───────────────────────────────────
+    // Cerca il file logo già caricato nel zip dal codice principale
+    const logoEntry = Object.keys(mainZip.files).find(f =>
+      f.startsWith("ppt/media/logo_company.")
+    );
+    if (logoEntry) {
+      const logoExt = logoEntry.split(".").pop() ?? "png";
+      const logoRid = "rLogoFindings";
+      // Aggiungi la rel
+      slideRels = slideRels.replace(
+        "</Relationships>",
+        `<Relationship Id="${logoRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/logo_company.${logoExt}"/></Relationships>`
+      );
+      // Aggiungi la picture — stessa posizione delle slide principali
+      const logoPic =
+        `<p:pic><p:nvPicPr><p:cNvPr id="700" name="logo_findings_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
+        `<p:blipFill><a:blip r:embed="${logoRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
+        `<p:spPr><a:xfrm><a:off x="10191750" y="228600"/><a:ext cx="1571625" cy="523875"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+      slideXml = slideXml.replace("</p:spTree>", logoPic + "</p:spTree>");
+    }
+
     // ── Write slide XML and rels into main zip ────────────────────────────────
     const newSlidePath = `ppt/slides/slide${newSlideNum}.xml`;
     const newSlideRelsPath = `ppt/slides/_rels/slide${newSlideNum}.xml.rels`;
