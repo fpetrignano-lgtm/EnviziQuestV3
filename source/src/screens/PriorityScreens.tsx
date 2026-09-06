@@ -836,7 +836,10 @@ export function PriorityMatrixScreen({
   // ── Use-case flow state ──────────────────────────────────────────────────
   const [ucOpen,setUcOpen]=useState<string|null>(null);
   const [ucDraft,setUcDraft]=useState<number[]>([]);
-  const [not5WarnDismissed,setNot5WarnDismissed]=useState(false); // utente ha letto l'avviso
+  // Tiene traccia di quale valore di highCount l'utente ha già dismesso.
+  // null = mai dismesso → popup aperto se highCount≠5.
+  // Se highCount cambia (o si arriva sulla schermata con un count diverso) si riapre.
+  const [not5WarnDismissedAt,setNot5WarnDismissedAt]=useState<number|null>(null);
 
   // Tutti i need inclusi
   const allNeeds = dataNeeds.filter(n => isNeedIncluded(n.id)).map((n) => {
@@ -864,11 +867,9 @@ export function PriorityMatrixScreen({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   },[dataNeeds,needRelevance,needCriticality]);
 
-  // Il popup "non-5" deve comparire se highCount ≠ 5 e non è stato dismesso dall'utente per questa configurazione
-  // Si rireapre automaticamente se il count cambia di nuovo
-  const showNot5Warn = highCount !== 5 && !not5WarnDismissed;
-  // Reset del dismiss quando il conteggio cambia
-  React.useEffect(()=>{ setNot5WarnDismissed(false); },[highCount]);
+  // Il popup compare se highCount≠5 E l'utente non ha ancora dismesso *questo* valore.
+  // Si riapre automaticamente appena il count cambia (anche solo di 1).
+  const showNot5Warn = highCount !== 5 && not5WarnDismissedAt !== highCount;
 
   // Prossimo need (tra i top-5) senza selezione → target freccia
   const nextUcNeed = ucNeeds.find(n => !(ucSelections[n.id]?.length));
@@ -930,7 +931,7 @@ export function PriorityMatrixScreen({
                 : "The method requires exactly 5 priority elements. Raise the R or C value of some elements to reach 5.")}
         </p>
         <div style={{display:"flex",justifyContent:"flex-end"}}>
-          <button style={{padding:"12px 28px",borderRadius:"8px",border:"1px solid rgba(253,224,71,.5)",background:"rgba(253,224,71,.12)",color:"#fde047",fontSize:"18px",fontWeight:700,cursor:"pointer"}} onClick={()=>setNot5WarnDismissed(true)}>
+          <button style={{padding:"12px 28px",borderRadius:"8px",border:"1px solid rgba(253,224,71,.5)",background:"rgba(253,224,71,.12)",color:"#fde047",fontSize:"18px",fontWeight:700,cursor:"pointer"}} onClick={()=>setNot5WarnDismissedAt(highCount)}>
             {isIt?"Ho capito, continuo a modificare →":"Got it, I'll keep editing →"}
           </button>
         </div>
