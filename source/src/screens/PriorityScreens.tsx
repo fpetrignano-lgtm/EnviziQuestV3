@@ -833,6 +833,46 @@ export function PriorityMatrixScreen({
     return ()=>window.removeEventListener("keydown",handler);
   },[]);
 
+  // ── Drag state ────────────────────────────────────────────────────────────
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const dragState = React.useRef<{id:string,moved:boolean}|null>(null);
+  const [draggingId,setDraggingId]=useState<string|null>(null);
+
+  const svgPoint = React.useCallback((clientX:number,clientY:number):{x:number,y:number}|null=>{
+    const svg = svgRef.current;
+    if(!svg) return null;
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if(!ctm) return null;
+    return pt.matrixTransform(ctm.inverse());
+  },[]);
+
+  // SVG coords → clamped integer R/C value (1-10)
+  const fromX = React.useCallback((sx:number)=>Math.max(1,Math.min(10,Math.round((sx-PAD_L)/MATRIX_W*(10-1)+1))),[]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fromY = React.useCallback((sy:number)=>Math.max(1,Math.min(10,Math.round(10-(sy/MATRIX_H)*(10-1)))),[]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(()=>{
+    const onMove=(e:MouseEvent)=>{
+      if(!dragState.current) return;
+      dragState.current.moved=true;
+      const p=svgPoint(e.clientX,e.clientY);
+      if(!p) return;
+      const id=dragState.current.id;
+      const newR=fromX(p.x);
+      const newC=fromY(p.y);
+      setNeedRelevance(prev=>prev[id]===newR?prev:{...prev,[id]:newR});
+      setNeedCriticality(prev=>prev[id]===newC?prev:{...prev,[id]:newC});
+    };
+    const onUp=()=>{
+      dragState.current=null;
+      setDraggingId(null);
+    };
+    window.addEventListener("mousemove",onMove);
+    window.addEventListener("mouseup",onUp);
+    return ()=>{window.removeEventListener("mousemove",onMove);window.removeEventListener("mouseup",onUp);};
+  },[svgPoint,fromX,fromY,setNeedRelevance,setNeedCriticality]);
+
   // ── Use-case flow state ──────────────────────────────────────────────────
   const [ucOpen,setUcOpen]=useState<string|null>(null);
   const [ucDraft,setUcDraft]=useState<number[]>([]);
@@ -993,7 +1033,7 @@ export function PriorityMatrixScreen({
         </div>
         {/* SVG wrapped in a relative container for the arrow overlay */}
         <div className="pmSvgWrap">
-        <svg className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"100%",transition:"viewBox .35s"}}>
+        <svg ref={svgRef} className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"100%",transition:"viewBox .35s",cursor:draggingId?"grabbing":"default",userSelect:"none"}}>
           {gridVals.map(v=><g key={v}>
             <line x1={toX(v)} y1={0} x2={toX(v)} y2={MATRIX_H} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
             <line x1={PAD_L} y1={toY(v)} x2={PAD_L+MATRIX_W} y2={toY(v)} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
@@ -1056,15 +1096,30 @@ export function PriorityMatrixScreen({
               const boxStrokeDash=isTransversal&&pmMissionFilter!==null?"4 2":undefined;
               const boxStrokeW = isUcTarget ? 2.5 : (isTransversal&&pmMissionFilter!==null?1.4:0.8);
               const boxStrokeColor = isHigh ? (isDone ? "#39efb4" : isUcTarget ? "#fde047" : n.color) : n.color;
+              const isDragging = draggingId===n.id;
               return <g key={n.id} className="pmDot" opacity={visible?1:0.1}
-                onClick={()=>openUcPopup(n.id)} style={{cursor:"pointer"}}>
-                <rect x={lx-bw/2} y={ly-bh/2} width={bw} height={bh} rx="3" fill="#07110e" fillOpacity="0.82" stroke={boxStrokeColor} strokeWidth={boxStrokeW} strokeOpacity="0.9" strokeDasharray={boxStrokeDash}/>
-                <text fontFamily="sans-serif" fontSize={FONT} fill={boxStrokeColor} fontWeight="600">
+                style={{cursor: isDragging?"grabbing":"grab"}}
+                onMouseDown={(e)=>{
+                  e.preventDefault();
+                  dragState.current={id:n.id,moved:false};
+                  setDraggingId(n.id);
+                }}
+                onClick={(e)=>{
+                  e.stopPropagation();
+                  if(dragState.current?.moved) return; // era un drag, non un click
+                  openUcPopup(n.id);
+                }}>
+                <rect x={lx-bw/2} y={ly-bh/2} width={bw} height={bh} rx="3"
+                  fill="#07110e" fillOpacity="0.82"
+                  stroke={isDragging?"#ffffff":boxStrokeColor}
+                  strokeWidth={isDragging?2:boxStrokeW}
+                  strokeOpacity="0.9" strokeDasharray={boxStrokeDash}/>
+                <text fontFamily="sans-serif" fontSize={FONT} fill={isDragging?"#ffffff":boxStrokeColor} fontWeight="600">
                   {vis.map((line,i)=><tspan key={i} x={lx} y={ly-bh/2+PAD_Y+(i+0.85)*LINE_H} textAnchor="middle">{line}</tspan>)}
                 </text>
                 {isTransversal&&pmMissionFilter!==null&&<text x={lx+bw/2-3} y={ly-bh/2+8} fontSize="5.5" fill="#f5c542" fontFamily="monospace" fontWeight="700" textAnchor="end" opacity="0.9">TRASV.</text>}
-                {isDone&&isHigh&&<text x={lx+bw/2-2} y={ly-bh/2+8} fontSize="8" fill="#39efb4" fontFamily="monospace" fontWeight="900" textAnchor="end" opacity="1">✓</text>}
-                <text x={lx} y={ly+bh/2-3} fontSize="7" fill={boxStrokeColor} fontFamily="monospace" fontWeight="700" opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
+                {isDone&&isHigh&&!isDragging&&<text x={lx+bw/2-2} y={ly-bh/2+8} fontSize="8" fill="#39efb4" fontFamily="monospace" fontWeight="900" textAnchor="end" opacity="1">✓</text>}
+                <text x={lx} y={ly+bh/2-3} fontSize={isDragging?8:7} fill={isDragging?"#ffffff":boxStrokeColor} fontFamily="monospace" fontWeight={isDragging?900:700} opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
               </g>;
             });
 
