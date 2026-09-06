@@ -488,9 +488,12 @@ export default function Home(){
       panel.style.cssText="position:fixed;inset:0;z-index:199998;background:rgba(7,18,15,.92);display:none;align-items:flex-start;justify-content:center;padding-top:0;";
       panel.innerHTML=`
         <div id="envizi-journey-drawer" style="background:#0d1f19;border:1px solid rgba(57,239,180,.22);width:100%;max-width:760px;height:100vh;overflow-y:auto;box-shadow:0 8px 60px rgba(0,0,0,.7);display:flex;flex-direction:column;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:18px 24px 14px;border-bottom:1px solid rgba(57,239,180,.15);position:sticky;top:0;background:#0d1f19;z-index:1;">
-            <span style="font-size:11px;font-family:var(--font-geist-mono,monospace);letter-spacing:.18em;text-transform:uppercase;color:#39efb4;opacity:.8;">Journey — Mappa delle Slide</span>
-            <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;">✕</button>
+          <div style="padding:18px 24px 12px;border-bottom:1px solid rgba(57,239,180,.15);position:sticky;top:0;background:#0d1f19;z-index:1;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <span style="font-size:11px;font-family:var(--font-geist-mono,monospace);letter-spacing:.18em;text-transform:uppercase;color:#39efb4;opacity:.8;">Journey — Mappa delle Slide</span>
+              <button id="envizi-journey-close" style="background:none;border:none;color:#39efb4;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px;">✕</button>
+            </div>
+            <input id="envizi-journey-search" type="text" placeholder="Cerca per ID o titolo…" style="width:100%;box-sizing:border-box;background:rgba(57,239,180,.06);border:1px solid rgba(57,239,180,.25);border-radius:6px;padding:8px 12px;color:#e8f5ef;font-family:var(--font-geist-mono,monospace);font-size:12px;outline:none;"/>
           </div>
           <div style="padding:0 24px 32px;flex:1;">
             <table id="envizi-journey-table" style="width:100%;border-collapse:collapse;margin-top:8px;">
@@ -517,52 +520,69 @@ export default function Home(){
     panel.style.display=journeyOpen?"flex":"none";
     if(!journeyOpen) return;
 
+    // helper: costruisce una riga della tabella
+    const buildRow=(s:Screen,i:number)=>{
+      const isCurrent=s===screen;
+      const tr=document.createElement("tr");
+      tr.dataset.id=s;
+      tr.dataset.title=(JOURNEY_TITLES[s]||s).toLowerCase();
+      tr.style.cssText=`border-bottom:1px solid rgba(57,239,180,.07);background:${isCurrent?"rgba(57,239,180,.06)":"transparent"};`;
+      const tdNum=document.createElement("td");
+      tdNum.style.cssText="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.45);white-space:nowrap;";
+      tdNum.textContent=String(i+1).padStart(2,"0");
+      const tdId=document.createElement("td");
+      tdId.style.cssText=`padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:${isCurrent?"#39efb4":"#6b8f80"};white-space:nowrap;`;
+      tdId.textContent=s;
+      const tdTitle=document.createElement("td");
+      tdTitle.style.cssText=`padding:9px 10px;font-size:13px;color:${isCurrent?"#e8f5ef":"#b5c9c1"};font-weight:${isCurrent?"600":"400"};`;
+      tdTitle.textContent=JOURNEY_TITLES[s]||s;
+      if(isCurrent){const badge=document.createElement("span");badge.style.cssText="font-size:9px;font-family:var(--font-geist-mono,monospace);color:#39efb4;opacity:.7;margin-left:6px;";badge.textContent="← qui";tdTitle.appendChild(badge);}
+      const tdBtn=document.createElement("td");
+      tdBtn.style.cssText="padding:9px 10px;text-align:right;";
+      const btn=document.createElement("button");
+      btn.style.cssText=`background:${isCurrent?"rgba(57,239,180,.18)":"rgba(57,239,180,.08)"};border:1px solid rgba(57,239,180,${isCurrent?".5":".2"});color:${isCurrent?"#39efb4":"#6b8f80"};font-family:var(--font-geist-mono,monospace);font-size:10px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;`;
+      btn.textContent="VAI →";
+      btn.addEventListener("click",(e)=>{
+        e.stopPropagation();
+        const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
+        if(p) p.style.display="none";
+        setJourneyOpen(false);
+        setScreenState(s);
+      });
+      tdBtn.appendChild(btn);
+      tr.appendChild(tdNum);tr.appendChild(tdId);tr.appendChild(tdTitle);tr.appendChild(tdBtn);
+      return tr;
+    };
+
     const tbody=document.getElementById("envizi-journey-tbody");
     if(tbody){
       tbody.innerHTML="";
-      ALL_SCREENS.forEach((s,i)=>{
-        const isCurrent=s===screen;
-        const tr=document.createElement("tr");
-        tr.style.cssText=`border-bottom:1px solid rgba(57,239,180,.07);background:${isCurrent?"rgba(57,239,180,.06)":"transparent"};`;
-        const title=JOURNEY_TITLES[s]||s;
-        // numero
-        const tdNum=document.createElement("td");
-        tdNum.style.cssText="padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:rgba(57,239,180,.45);white-space:nowrap;";
-        tdNum.textContent=String(i+1).padStart(2,"0");
-        // id
-        const tdId=document.createElement("td");
-        tdId.style.cssText=`padding:9px 10px;font-size:11px;font-family:var(--font-geist-mono,monospace);color:${isCurrent?"#39efb4":"#6b8f80"};white-space:nowrap;`;
-        tdId.textContent=s;
-        // titolo
-        const tdTitle=document.createElement("td");
-        tdTitle.style.cssText=`padding:9px 10px;font-size:13px;color:${isCurrent?"#e8f5ef":"#b5c9c1"};font-weight:${isCurrent?"600":"400"};`;
-        tdTitle.textContent=title;
-        if(isCurrent){
-          const badge=document.createElement("span");
-          badge.style.cssText="font-size:9px;font-family:var(--font-geist-mono,monospace);color:#39efb4;opacity:.7;margin-left:6px;";
-          badge.textContent="← qui";
-          tdTitle.appendChild(badge);
-        }
-        // bottone VAI
-        const tdBtn=document.createElement("td");
-        tdBtn.style.cssText="padding:9px 10px;text-align:right;";
-        const btn=document.createElement("button");
-        btn.style.cssText=`background:${isCurrent?"rgba(57,239,180,.18)":"rgba(57,239,180,.08)"};border:1px solid rgba(57,239,180,${isCurrent?".5":".2"});color:${isCurrent?"#39efb4":"#6b8f80"};font-family:var(--font-geist-mono,monospace);font-size:10px;letter-spacing:.08em;padding:4px 10px;border-radius:4px;cursor:pointer;white-space:nowrap;`;
-        btn.textContent="VAI →";
-        btn.addEventListener("click",(e)=>{
-          e.stopPropagation();
-          const p=document.getElementById("envizi-journey-panel-ui") as HTMLElement|null;
-          if(p) p.style.display="none";
-          setJourneyOpen(false);
-          setScreenState(s);
-        });
-        tdBtn.appendChild(btn);
-        tr.appendChild(tdNum);tr.appendChild(tdId);tr.appendChild(tdTitle);tr.appendChild(tdBtn);
-        tbody.appendChild(tr);
-      });
+      ALL_SCREENS.forEach((s,i)=>tbody.appendChild(buildRow(s,i)));
       // scroll alla riga corrente
-      const currentRow=tbody.querySelector(`tr:nth-child(${ALL_SCREENS.indexOf(screen)+1})`) as HTMLElement|null;
+      const currentRow=tbody.querySelector(`tr[data-id="${screen}"]`) as HTMLElement|null;
       currentRow?.scrollIntoView({block:"center",behavior:"instant"});
+    }
+
+    // campo di ricerca — reset + focus + filtro live
+    const searchInput=document.getElementById("envizi-journey-search") as HTMLInputElement|null;
+    if(searchInput){
+      searchInput.value="";
+      setTimeout(()=>searchInput.focus(),50);
+      const onInput=()=>{
+        const q=searchInput.value.toLowerCase().trim();
+        const rows=tbody?.querySelectorAll("tr[data-id]") as NodeListOf<HTMLElement>|undefined;
+        rows?.forEach(row=>{
+          const matchId=(row.dataset.id||"").includes(q);
+          const matchTitle=(row.dataset.title||"").includes(q);
+          row.style.display=(q===""||matchId||matchTitle)?"":"none";
+        });
+      };
+      searchInput.addEventListener("input",onInput);
+      // stopPropagation sul keydown per evitare che l'app intercetti tasti
+      const onKey=(e:KeyboardEvent)=>{e.stopPropagation();if(e.key==="Escape"){setJourneyOpen(false);}};
+      searchInput.addEventListener("keydown",onKey);
+      // pulizia nel return
+      var _cleanSearch=()=>{searchInput.removeEventListener("input",onInput);searchInput.removeEventListener("keydown",onKey);};
     }
 
     // close button
@@ -576,6 +596,7 @@ export default function Home(){
     panel.addEventListener("click",onBackdrop);
 
     return ()=>{
+      _cleanSearch?.();
       closeBtn?.removeEventListener("click",onClose);
       panel.removeEventListener("click",onBackdrop);
     };
