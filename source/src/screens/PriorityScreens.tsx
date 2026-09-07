@@ -880,6 +880,7 @@ export function PriorityMatrixScreen({
   // null = mai dismesso → popup aperto se highCount≠5.
   // Se highCount cambia (o si arriva sulla schermata con un count diverso) si riapre.
   const [not5WarnDismissedAt,setNot5WarnDismissedAt]=useState<number|null>(null);
+  const [synthWarnOpen,setSynthWarnOpen]=useState(false);
 
   // Tutti i need inclusi
   const allNeeds = dataNeeds.filter(n => isNeedIncluded(n.id)).map((n) => {
@@ -923,23 +924,28 @@ export function PriorityMatrixScreen({
     setUcOpen(id);
   },[ucSelections]);
 
-  // Chiudi e salva
+  // Chiudi e salva — se draft vuoto rimuove la selezione (box torna blu tratteggiato)
   const closeUcPopup = useCallback(() => {
-    if (ucOpen && ucDraft.length > 0) {
-      setUcSelections(prev => ({...prev, [ucOpen]: ucDraft}));
+    if (ucOpen) {
+      if (ucDraft.length > 0) {
+        setUcSelections(prev => ({...prev, [ucOpen]: ucDraft}));
+      } else {
+        setUcSelections(prev => {const next={...prev};delete next[ucOpen];return next;});
+      }
     }
     setUcOpen(null);
   },[ucOpen,ucDraft,setUcSelections]);
 
-  const MATRIX_W = 800;
-  const MATRIX_H = 380;
+  const MATRIX_W = 2856;
+  const MATRIX_H = 1475;
   const PAD_L = 38;
   const PAD_B = 58;
+  const PAD_T = 60;
   const VW = MATRIX_W + PAD_L;
-  const VH = MATRIX_H + PAD_B;
+  const VH = MATRIX_H + PAD_B + PAD_T;
 
   const toX = (v:number) => PAD_L+(v-1)/(10-1)*MATRIX_W;
-  const toY = (v:number) => (10-v)/(10-1)*MATRIX_H;
+  const toY = (v:number) => PAD_T+(10-v)/(10-1)*MATRIX_H;
   const gridVals = [1,2,3,4,5,6,7,8,9,10];
   const zoomF = focusMinR;
   const vbX = zoomF>1?toX(zoomF)-PAD_L/2:0;
@@ -973,6 +979,27 @@ export function PriorityMatrixScreen({
         <div style={{display:"flex",justifyContent:"flex-end"}}>
           <button style={{padding:"12px 28px",borderRadius:"8px",border:"1px solid rgba(253,224,71,.5)",background:"rgba(253,224,71,.12)",color:"#fde047",fontSize:"18px",fontWeight:700,cursor:"pointer"}} onClick={()=>setNot5WarnDismissedAt(highCount)}>
             {isIt?"Ho capito, continuo a modificare →":"Got it, I'll keep editing →"}
+          </button>
+        </div>
+      </div>
+    </div>}
+    {/* ── Modale blocco sintesi: count ≠ 5 ───────────────────────────── */}
+    {synthWarnOpen&&<div style={{position:"fixed",inset:0,zIndex:29000,background:"rgba(4,12,10,.92)",display:"flex",alignItems:"center",justifyContent:"center"}} onClick={()=>setSynthWarnOpen(false)}>
+      <div style={{background:"#0d1f19",border:"2px solid rgba(253,224,71,.55)",borderRadius:"16px",padding:"36px 40px",maxWidth:"640px",width:"92vw",boxShadow:"0 12px 48px rgba(0,0,0,.7)"}} onClick={e=>e.stopPropagation()}>
+        <p style={{margin:"0 0 6px",fontSize:"13px",fontFamily:"var(--font-geist-mono,monospace)",letterSpacing:".12em",textTransform:"uppercase",color:"#fde047"}}>{isIt?"Azione bloccata":"Action blocked"}</p>
+        <p style={{margin:"0 0 16px",fontSize:"24px",fontWeight:700,color:"#e8f5ef",lineHeight:1.35}}>
+          {isIt
+            ? `Nel quadrante R>5 e C>5 sono presenti ${highCount} element${highCount===1?"o":"i"}, non 5.`
+            : `The R>5 and C>5 quadrant contains ${highCount} element${highCount===1?"":"s"}, not 5.`}
+        </p>
+        <p style={{margin:"0 0 28px",fontSize:"17px",color:"#7ecfb8",lineHeight:1.6}}>
+          {isIt
+            ? "La metodologia prevede esattamente 5 elementi di analisi nel quadrante ad alta priorità. Modifica i valori R e C degli elementi fino a raggiungere esattamente 5."
+            : "The methodology requires exactly 5 analysis elements in the high-priority quadrant. Adjust the R and C values until you reach exactly 5."}
+        </p>
+        <div style={{display:"flex",justifyContent:"flex-end"}}>
+          <button style={{padding:"12px 28px",borderRadius:"8px",border:"1px solid rgba(253,224,71,.5)",background:"rgba(253,224,71,.12)",color:"#fde047",fontSize:"16px",fontWeight:700,cursor:"pointer"}} onClick={()=>setSynthWarnOpen(false)}>
+            {isIt?"Torna alla matrice →":"Back to the matrix →"}
           </button>
         </div>
       </div>
@@ -1035,10 +1062,10 @@ export function PriorityMatrixScreen({
         <div className="pmSvgWrap">
         <svg ref={svgRef} className="pmSvg" viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"100%",transition:"viewBox .35s",cursor:draggingId?"grabbing":"default",userSelect:"none"}}>
           {gridVals.map(v=><g key={v}>
-            <line x1={toX(v)} y1={0} x2={toX(v)} y2={MATRIX_H} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
+            <line x1={toX(v)} y1={PAD_T} x2={toX(v)} y2={PAD_T+MATRIX_H} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
             <line x1={PAD_L} y1={toY(v)} x2={PAD_L+MATRIX_W} y2={toY(v)} stroke="rgba(255,255,255,.55)" strokeWidth="1.5" strokeDasharray="5 5"/>
-            <text x={toX(v)} y={MATRIX_H+16} textAnchor="middle" fontSize="12" fill="#7ecfb8" fontFamily="monospace" fontWeight="700">{v}</text>
-            <text x={PAD_L-8} y={toY(v)+5} textAnchor="end" fontSize="12" fill="#7ecfb8" fontFamily="monospace" fontWeight="700">{v}</text>
+            <text x={toX(v)} y={PAD_T+MATRIX_H+48} textAnchor="middle" fontSize="36" fill="#7ecfb8" fontFamily="monospace" fontWeight="700">{v}</text>
+            <text x={PAD_L-24} y={toY(v)+15} textAnchor="end" fontSize="36" fill="#7ecfb8" fontFamily="monospace" fontWeight="700">{v}</text>
           </g>)}
           {pmMissionFilter!==null&&(()=>{
             const tx=toX(10); const ty=toY(10);
@@ -1052,23 +1079,46 @@ export function PriorityMatrixScreen({
               <text x={tx} y={ty+8} textAnchor="middle" fontSize="7" fill="#f5c542" fontFamily="monospace" fontWeight="700">{lbl2}</text>
             </g>;
           })()}
-          <text x={PAD_L+MATRIX_W/2} y={MATRIX_H+36} textAnchor="middle" fontSize="12" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3">{isIt?"RILEVANZA":"RELEVANCE"}</text>
-          <text x={PAD_L+MATRIX_W} y={MATRIX_H+52} textAnchor="end" fontSize="9" fill="rgba(255,255,255,.85)" fontFamily="monospace" fontWeight="700">{isIt?"R = Rilevanza (1–10)   ·   C = Criticità (1–10)":"R = Relevance (1–10)   ·   C = Criticality (1–10)"}</text>
-          <text x={10} y={MATRIX_H/2} textAnchor="middle" fontSize="12" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3" transform={`rotate(-90,10,${MATRIX_H/2})`}>{isIt?"CRITICITÀ":"CRITICALITY"}</text>
-          <rect x={toX(5.5)} y={0} width={PAD_L+MATRIX_W-toX(5.5)} height={MATRIX_H/2} fill="rgba(57,239,180,.04)"/>
+          <text x={PAD_L+MATRIX_W/2} y={PAD_T+MATRIX_H+108} textAnchor="middle" fontSize="36" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3">{isIt?"RILEVANZA":"RELEVANCE"}</text>
+          <text x={PAD_L+MATRIX_W} y={PAD_T+MATRIX_H+156} textAnchor="end" fontSize="27" fill="rgba(255,255,255,.85)" fontFamily="monospace" fontWeight="700">{isIt?"R = Rilevanza (1–10)   ·   C = Criticità (1–10)":"R = Relevance (1–10)   ·   C = Criticality (1–10)"}</text>
+          <text x={10} y={PAD_T+MATRIX_H/2} textAnchor="middle" fontSize="36" fill="#c2d8cf" fontFamily="monospace" fontWeight="700" letterSpacing="3" transform={`rotate(-90,10,${PAD_T+MATRIX_H/2})`}>{isIt?"CRITICITÀ":"CRITICALITY"}</text>
+          <rect x={toX(5.5)} y={PAD_T} width={PAD_L+MATRIX_W-toX(5.5)} height={MATRIX_H/2} fill="rgba(57,239,180,.13)" stroke="rgba(57,239,180,.7)" strokeWidth="8" strokeDasharray="32 16"/>
+          <text x={(toX(5.5)+(PAD_L+MATRIX_W))/2} y={PAD_T-12} textAnchor="middle" fontSize="44" fill="#ffffff" fontFamily="monospace" fontWeight="700" letterSpacing="3">{isIt?"QUADRANTE PRIORITÀ":"PRIORITY QUADRANT"}</text>
           {(()=>{
-            const FONT=6; const LINE_H=7.5; const MAX_LINES=4;
-            const CHAR_W=FONT*0.52; const PAD_X=6; const PAD_Y=4;
+            const FONT=29; const LINE_H=36; const MAX_LINES=4;
+            const CHAR_W=FONT*0.52; const PAD_X=12; const PAD_Y=8;
             const maxChars=Math.floor((MATRIX_W/9-PAD_X*2)/CHAR_W);
+            // ── Ranking: prima R>5 C>5 (per R+C desc), poi gli altri (per R+C desc) ──
+            const h=(s:string)=>s.split("").reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,0);
+            const byScore=(a:{relNorm:number,crit:number,id:string},b:{relNorm:number,crit:number,id:string})=>{
+              const diff=(b.relNorm+b.crit)-(a.relNorm+a.crit);
+              return diff!==0?diff:h(a.id)-h(b.id);
+            };
+            const highNeeds=[...allNeeds].filter(n=>n.relNorm>5&&n.crit>5).sort(byScore);
+            const restNeeds=[...allNeeds].filter(n=>!(n.relNorm>5&&n.crit>5)).sort(byScore);
+            const sorted=[...highNeeds,...restNeeds];
+            const rankMap=new Map(sorted.map((n,i)=>([n.id,i+1])));
+            // Conta quante volte compare ogni score R+C per offset unstack
+            const scoreCount=new Map<number,number>();
+            allNeeds.forEach(n=>{const s=n.relNorm+n.crit;scoreCount.set(s,(scoreCount.get(s)??0)+1);});
+            const scoreIdx=new Map<number,number>();
             const needMeta=allNeeds.map(n=>{
+              const rank=rankMap.get(n.id)??0;
+              const rankLabel=`#${rank}`;
               const words=n.label.split(" ");
-              const lines:string[]=[]; let cur="";
+              const lines:string[]=[rankLabel]; let cur="";
               for(const w of words){const test=cur?cur+" "+w:w;if(test.length<=maxChars)cur=test;else{if(cur)lines.push(cur);cur=w;}}
               if(cur)lines.push(cur);
-              const vis=lines.slice(0,MAX_LINES);
+              const vis=lines.slice(0,MAX_LINES+1); // +1 per il rank
               const bw=Math.max(...vis.map(l=>l.length))*CHAR_W+PAD_X*2;
               const bh=vis.length*LINE_H+PAD_Y*2+8;
-              return {n,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit)};
+              // unstack: se più need hanno stesso R+C li offsettiamo verticalmente
+              const score=n.relNorm+n.crit;
+              const cnt=scoreCount.get(score)??1;
+              const idx=scoreIdx.get(score)??0;
+              scoreIdx.set(score,idx+1);
+              const unstackOff=cnt>1?(idx-(cnt-1)/2)*(bh+8):0;
+              return {n,rank,vis,bw,bh,ox:toX(n.relNorm),oy:toY(n.crit),lx:toX(n.relNorm),ly:toY(n.crit)+unstackOff};
             });
             for(let iter=0;iter<50;iter++){
               for(let i=0;i<needMeta.length;i++){
@@ -1093,9 +1143,10 @@ export function PriorityMatrixScreen({
               const isDone = (ucSelections[n.id]?.length??0)>0;
               const hasUc = (USE_CASE_SCENARIOS[n.id]?.length??0)>0;
               const isHigh = n.relNorm>5&&n.crit>5&&hasUc;
-              const boxStrokeDash=isTransversal&&pmMissionFilter!==null?"4 2":undefined;
-              const boxStrokeW = isUcTarget ? 2.5 : (isTransversal&&pmMissionFilter!==null?1.4:0.8);
-              const boxStrokeColor = isHigh ? (isDone ? "#39efb4" : isUcTarget ? "#fde047" : n.color) : n.color;
+              const isInQuadrant = n.relNorm>5&&n.crit>5;
+              const SW=Math.round(FONT*0.35);
+              const boxStrokeW = isUcTarget ? SW*2.5 : (isTransversal&&pmMissionFilter!==null?SW*0.5:SW*0.3);
+              const boxStrokeColor = isInQuadrant ? (isDone ? "#39efb4" : "#3b82f4") : (isDone ? "#39efb4" : "#3b82f4");
               const isDragging = draggingId===n.id;
               return <g key={n.id} className="pmDot" opacity={visible?1:0.1}
                 style={{cursor: isDragging?"grabbing":"grab"}}
@@ -1113,13 +1164,21 @@ export function PriorityMatrixScreen({
                   fill="#07110e" fillOpacity="0.82"
                   stroke={isDragging?"#ffffff":boxStrokeColor}
                   strokeWidth={isDragging?2:boxStrokeW}
-                  strokeOpacity="0.9" strokeDasharray={boxStrokeDash}/>
+                  strokeOpacity="0.9"
+                  strokeDasharray={(!isDragging&&!isDone)?`${Math.round(FONT*1.4)} ${Math.round(FONT*0.7)}`:undefined}/>
                 <text fontFamily="sans-serif" fontSize={FONT} fill={isDragging?"#ffffff":boxStrokeColor} fontWeight="600">
-                  {vis.map((line,i)=><tspan key={i} x={lx} y={ly-bh/2+PAD_Y+(i+0.85)*LINE_H} textAnchor="middle">{line}</tspan>)}
+                  {vis.map((line,i)=>{
+                    const isRank=i===0;
+                    return <tspan key={i} x={lx} y={ly-bh/2+PAD_Y+(i+0.85)*LINE_H} textAnchor="middle"
+                      fontSize={isRank?FONT*1.1:FONT}
+                      fontWeight={isRank?"800":"600"}
+                      fill={isRank?(isDragging?"#ffffff":"#fde047"):undefined}
+                    >{line}</tspan>;
+                  })}
                 </text>
                 {isTransversal&&pmMissionFilter!==null&&<text x={lx+bw/2-3} y={ly-bh/2+8} fontSize="5.5" fill="#f5c542" fontFamily="monospace" fontWeight="700" textAnchor="end" opacity="0.9">TRASV.</text>}
                 {isDone&&isHigh&&!isDragging&&<text x={lx+bw/2-2} y={ly-bh/2+8} fontSize="8" fill="#39efb4" fontFamily="monospace" fontWeight="900" textAnchor="end" opacity="1">✓</text>}
-                <text x={lx} y={ly+bh/2-3} fontSize={isDragging?8:7} fill={isDragging?"#ffffff":boxStrokeColor} fontFamily="monospace" fontWeight={isDragging?900:700} opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
+                <text x={lx} y={ly+bh/2+FONT*0.6} fontSize={isDragging?FONT:FONT*0.8} fill={isDragging?"#ffffff":boxStrokeColor} fontFamily="monospace" fontWeight={isDragging?900:700} opacity="1" textAnchor="middle">{`R${n.relNorm} · C${n.crit}`}</text>
               </g>;
             });
 
@@ -1164,6 +1223,21 @@ export function PriorityMatrixScreen({
           })()}
         </svg>
         </div>
+        {/* ── Legenda bordo box ───────────────────────────────────────────── */}
+        <div style={{flexShrink:0,display:"flex",alignItems:"center",gap:"24px",padding:"4px 4px 2px",flexWrap:"wrap"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <svg width="36" height="18" style={{flexShrink:0}}>
+              <rect x="1" y="1" width="34" height="16" rx="3" fill="none" stroke="#3b82f4" strokeWidth="2" strokeDasharray="6 4"/>
+            </svg>
+            <span style={{fontSize:"13px",color:"#7ecfb8",fontFamily:"var(--font-geist-mono,monospace)"}}>{isIt?"Scenari non compilati":"Scenarios not filled"}</span>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <svg width="36" height="18" style={{flexShrink:0}}>
+              <rect x="1" y="1" width="34" height="16" rx="3" fill="none" stroke="#39efb4" strokeWidth="2"/>
+            </svg>
+            <span style={{fontSize:"13px",color:"#7ecfb8",fontFamily:"var(--font-geist-mono,monospace)"}}>{isIt?"Scenari compilati":"Scenarios filled"}</span>
+          </div>
+        </div>
         {/* ── Banner avviso count ─────────────────────────────────────────── */}
         {highCount!==5&&<div style={{flexShrink:0,display:"flex",alignItems:"center",gap:"14px",padding:"10px 18px",marginBottom:"6px",borderRadius:"10px",background:"rgba(253,224,71,.10)",border:"2px solid rgba(253,224,71,.55)"}}>
           <span style={{fontSize:"28px",lineHeight:1}}>⚠️</span>
@@ -1174,20 +1248,35 @@ export function PriorityMatrixScreen({
           </p>
         </div>}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 0 4px",width:"100%",gap:"16px",flexShrink:0}}>
-          <p style={{margin:0,fontSize:"clamp(16px,1.3vw,20px)",lineHeight:1.4,maxWidth:"560px",color:"#5a9e88"}}>
-            {highCount===5&&ucNeeds.length>0&&!allUcDone
-              ? (isIt
-                  ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
-                  : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
-              : highCount===5
+          <div style={{display:"flex",gap:"16px",alignItems:"flex-start",flex:1,minWidth:0}}>
+            <p style={{margin:0,fontSize:"clamp(16px,1.3vw,20px)",lineHeight:1.4,color:"#5a9e88",flex:1,minWidth:0}}>
+              {highCount===5&&ucNeeds.length>0&&!allUcDone
                 ? (isIt
-                    ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
-                    : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face.")
-                : ""}
-          </p>
+                    ? "Seleziona gli scenari nei riquadri evidenziati (R>5 e C>5) prima di procedere."
+                    : "Select scenarios in the highlighted boxes (R>5 and C>5) before proceeding.")
+                : highCount===5
+                  ? (isIt
+                      ? "La matrice determina l'ordine delle aree di approfondimento: le esigenze ad alta priorità guidano la sequenza delle sfide che affronterai."
+                      : "The matrix determines the order of focus areas: high-priority needs guide the sequence of challenges you will face.")
+                  : ""}
+            </p>
+            <p style={{margin:0,fontSize:"clamp(16px,1.3vw,20px)",lineHeight:1.4,color:"#fde047",flex:1,minWidth:0,padding:"8px 14px",borderRadius:"8px",background:"rgba(253,224,71,.06)",border:"1px solid rgba(253,224,71,.25)"}}>
+              {isIt
+                ? "Compila 5 elementi nel quadrante priorità per poter proseguire. Puoi cambiare i valori di priorità nei box o trascinando i box con il mouse."
+                : "Fill in 5 elements in the priority quadrant to proceed. You can change priority values inside each box or by dragging boxes with the mouse."}
+            </p>
+          </div>
           {pmFromBriefing
             ? <button className="actionButton" style={{flexShrink:0,width:"auto"}} onClick={()=>{setPmFromBriefing(false);setScreen("compare");}}>{isIt?"Continua verso l'AS-IS":"Continue to AS-IS"}<b> →</b></button>
-            : <button className="actionButton" style={{flexShrink:0,width:"auto",opacity:(allUcDone&&highCount===5)?1:0.35,pointerEvents:(allUcDone&&highCount===5)?"auto":"none",filter:(allUcDone&&highCount===5)?"none":"grayscale(0.6)"}} onClick={()=>{if(allUcDone&&highCount===5)setScreen("ilTuoReport");}}>{isIt?"Genera la sintesi e costruisci la roadmap":"Generate the summary and build the roadmap"}<b> →</b></button>
+            : <button
+                className="actionButton"
+                style={{flexShrink:0,width:"auto",opacity:(allUcDone&&highCount===5)?1:0.35,filter:(allUcDone&&highCount===5)?"none":"grayscale(0.6)"}}
+                onClick={()=>{
+                  if(highCount!==5){setSynthWarnOpen(true);return;}
+                  if(!allUcDone){return;}
+                  setScreen("ilTuoReport");
+                }}
+              >{isIt?"Genera la sintesi e costruisci la roadmap":"Generate the summary and build the roadmap"}<b> →</b></button>
           }
         </div>
         {pmSelected&&<div className="pmPopoverOverlay" onClick={()=>setPmSelected(null)}>
@@ -1207,7 +1296,9 @@ export function PriorityMatrixScreen({
           if(!need) return null;
           const scenarios = USE_CASE_SCENARIOS[ucOpen] ?? [];
           const hasScenarios = scenarios.length > 0;
+          const MAX_UC = 2;
           const canConfirm = !hasScenarios || ucDraft.length > 0;
+          const atMax = ucDraft.length >= MAX_UC;
           // Stepper helper inline
           const RVal = needRelevance[need.id] ?? need.relNorm;
           const CVal = needCriticality[need.id] ?? need.crit;
@@ -1234,8 +1325,8 @@ export function PriorityMatrixScreen({
               {/* Instruction — solo se ci sono scenari */}
               {hasScenarios&&<p style={{margin:"0 0 20px",fontSize:"22px",color:"#7ecfb8",lineHeight:1.5,padding:"14px 18px",background:"rgba(57,239,180,.06)",borderRadius:"8px",borderLeft:"4px solid rgba(57,239,180,.4)"}}>
                 {isIt
-                  ? "Seleziona tutti gli use case che sono significativi nella tua realtà. Identificati con il ruolo se citato. Devi sceglierne almeno uno per continuare."
-                  : "Select all use cases that are significant in your context. Identify with the role if mentioned. You must choose at least one to continue."}
+                  ? "Seleziona tutti gli use case che sono significativi nella tua realtà. Identificati con il ruolo se citato. Devi sceglierne almeno uno per continuare, massimo due. Quando hai finito premi ✕ in alto a destra."
+                  : "Select all use cases that are significant in your context. Identify with the role if mentioned. You must choose at least one to continue, maximum two. When done, press ✕ in the top right."}
               </p>}
               {/* Two-column body */}
               <div style={{display:"flex",gap:"28px",flex:1,minHeight:0}}>
@@ -1243,11 +1334,13 @@ export function PriorityMatrixScreen({
                 <div style={{flex:1,display:"flex",flexDirection:"column",gap:"10px",marginBottom:"24px",overflowY:"auto"}}>
                   {hasScenarios ? scenarios.map((uc,i)=>{
                     const checked = ucDraft.includes(i);
-                    return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":"rgba(255,255,255,.1)"}`,cursor:"pointer",transition:"background .15s,border-color .15s"}}>
-                      <input type="checkbox" checked={checked} onChange={()=>{
+                    const disabled = !checked && atMax;
+                    return <label key={i} style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"14px 18px",borderRadius:"10px",background:checked?"rgba(57,239,180,.1)":disabled?"rgba(255,255,255,.015)":"rgba(255,255,255,.03)",border:`1px solid ${checked?"rgba(57,239,180,.45)":disabled?"rgba(255,255,255,.05)":"rgba(255,255,255,.1)"}`,cursor:disabled?"not-allowed":"pointer",transition:"background .15s,border-color .15s",opacity:disabled?0.4:1}}>
+                      <input type="checkbox" checked={checked} disabled={disabled} onChange={()=>{
+                        if(disabled) return;
                         setUcDraft(prev=>prev.includes(i)?prev.filter(x=>x!==i):[...prev,i]);
-                      }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:"pointer"}}/>
-                      <span style={{fontSize:"22px",color:checked?"#e8f5ef":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
+                      }} style={{marginTop:"4px",width:"22px",height:"22px",flexShrink:0,accentColor:"#39efb4",cursor:disabled?"not-allowed":"pointer"}}/>
+                      <span style={{fontSize:"22px",color:checked?"#e8f5ef":disabled?"#4a7a6a":"#9dbfb5",lineHeight:1.55}}>{uc}</span>
                     </label>;
                   }) : <p style={{margin:"auto 0",fontSize:"18px",color:"#4a7a6a",fontStyle:"italic"}}>{isIt?"Nessuno scenario disponibile per questo elemento.":"No scenarios available for this element."}</p>}
                 </div>
@@ -1281,12 +1374,14 @@ export function PriorityMatrixScreen({
               </div>
               {/* Footer */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px",marginTop:"8px"}}>
-                <span style={{fontSize:"22px",color:canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
+                <span style={{fontSize:"22px",color:atMax?"#fde047":canConfirm?"#39efb4":"#5a9e88",fontFamily:"monospace"}}>
                   {!hasScenarios
                     ? ""
                     : ucDraft.length===0
                       ? (isIt?"Seleziona almeno uno scenario":"Select at least one scenario")
-                      : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
+                      : atMax
+                        ? (isIt?`Massimo ${MAX_UC} scenari selezionati`:`Maximum ${MAX_UC} scenarios selected`)
+                        : (isIt?`${ucDraft.length} scenario/i selezionati`:`${ucDraft.length} scenario(s) selected`)}
                 </span>
                 <button
                   disabled={!canConfirm}
