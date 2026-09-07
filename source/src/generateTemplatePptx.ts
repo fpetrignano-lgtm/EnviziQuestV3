@@ -564,44 +564,34 @@ function replaceSlide6NeedsList(
   items: SummaryPptxData["critItems"],
   isIt: boolean
 ): string {
-  const sorted = [...items].sort((a, b) => (b.rel + b.crit) - (a.rel + a.crit));
-
-  // Top 5 from high quadrant (R>5 AND C>5)
-  const highQ = sorted.filter(n => n.rel > 5 && n.crit > 5).slice(0, 5);
-  const highQIds = new Set(highQ.map(n => n.needId ?? n.label));
-  const others   = sorted.filter(n => !highQIds.has(n.needId ?? n.label));
-  const list     = [...highQ, ...others].slice(0, 10);
-
-  // Group by priority, preserving the sorted order within each group
-  const groups: { priority: string; items: typeof list }[] = [];
-  for (const it of list) {
-    const g = groups.find(g => g.priority === it.priority);
-    if (g) g.items.push(it);
-    else groups.push({ priority: it.priority, items: [it] });
-  }
+  // items arriva già ordinato da buildPptxData con la stessa logica di priorityMatrix:
+  // highNeeds (R>5 C>5) per R+C desc + tiebreak hash, poi rest — rank globale = posizione nell'array
+  const highQIds = new Set(items.filter(n => n.rel > 5 && n.crit > 5).map(n => n.needId ?? n.label));
+  const list = items.slice(0, 10);
 
   // rPr / pPr helpers
   const RPR    = `<a:rPr lang="it-IT" sz="1100" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
   const RPR_HI = `<a:rPr lang="it-IT" sz="1100" b="1" dirty="0"><a:solidFill><a:srgbClr val="073E31"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
-  const GRP_RPR= `<a:rPr lang="it-IT" sz="1000" b="1" dirty="0"><a:solidFill><a:srgbClr val="1A6B4A"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
+  const SEP_RPR= `<a:rPr lang="it-IT" sz="900" b="1" dirty="0"><a:solidFill><a:srgbClr val="1A6B4A"/></a:solidFill><a:latin typeface="Calibri"/><a:cs typeface="Calibri"/></a:rPr>`;
   const PPR    = `<a:pPr marL="228600" indent="0"><a:lnSpc><a:spcPct val="105000"/></a:lnSpc><a:spcBef><a:spcPts val="100"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
-  const GRP_PPR= `<a:pPr marL="0" indent="0"><a:lnSpc><a:spcPct val="100000"/></a:lnSpc><a:spcBef><a:spcPts val="300"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
+  const SEP_PPR= `<a:pPr marL="0" indent="0"><a:lnSpc><a:spcPct val="100000"/></a:lnSpc><a:spcBef><a:spcPts val="300"/></a:spcBef><a:spcAft><a:spcPts val="0"/></a:spcAft><a:buNone/></a:pPr>`;
 
-  // Global rank across all items (for numbering 1–10)
-  let rank = 0;
   const paras: string[] = [];
+  let prevWasHigh: boolean | null = null;
 
-  for (const grp of groups) {
-    // Group header = priority label
-    paras.push(`<a:p>${GRP_PPR}<a:r>${GRP_RPR}<a:t>${escapeXml(grp.priority)}</a:t></a:r></a:p>`);
-    for (const it of grp.items) {
-      rank++;
-      const isHigh = highQIds.has(it.needId ?? it.label);
-      const score  = it.rel + it.crit;
-      const line   = `${rank}. ${it.label}  (R:${it.rel} C:${it.crit} · ${score})`;
-      paras.push(`<a:p>${PPR}<a:r>${isHigh ? RPR_HI : RPR}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`);
+  list.forEach((it, idx) => {
+    const rank = idx + 1;
+    const isHigh = highQIds.has(it.needId ?? it.label);
+    // Separatore di sezione al cambio tra quadrante priorità e resto
+    if (prevWasHigh !== null && prevWasHigh && !isHigh) {
+      const sep = isIt ? "── Altri elementi ──" : "── Other elements ──";
+      paras.push(`<a:p>${SEP_PPR}<a:r>${SEP_RPR}<a:t>${escapeXml(sep)}</a:t></a:r></a:p>`);
     }
-  }
+    prevWasHigh = isHigh;
+    const score = it.rel + it.crit;
+    const line  = `${rank}. ${it.label}  (R:${it.rel} C:${it.crit} · ${score})`;
+    paras.push(`<a:p>${PPR}<a:r>${isHigh ? RPR_HI : RPR}<a:t>${escapeXml(line)}</a:t></a:r></a:p>`);
+  });
 
   const newTxBody = `<p:txBody><a:bodyPr/><a:lstStyle/>${paras.join("")}</p:txBody>`;
 
@@ -711,9 +701,8 @@ function generateMatrixPng(
       ctx.fillText(ql.label, ql.cx, ql.cy);
     }
 
-    // Sort items by R+C desc to get display rank (same as list)
-    const ranked = [...items]
-      .sort((a, b) => (b.rel + b.crit) - (a.rel + a.crit))
+    // Rank identico alla lista: items arriva già ordinato (highNeeds R>5C>5 prima, poi rest, tiebreak hash)
+    const ranked = items
       .slice(0, 10)
       .map((it, i) => ({ ...it, displayRank: i + 1 }));
 
@@ -1467,9 +1456,15 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
       + (top2 ? ` followed by ${top2.name}` : "")
       + `, highlighting the value of ESG for the business.`;
 
-  // Slide 6 title — use top-2 needs (sorted by R+C desc, same order as list)
-  const sortedForTitle = [...data.critItems]
-    .sort((a, b) => (b.rel + b.crit) - (a.rel + a.crit));
+  // Slide 6 title — use top-2 needs (stessa logica di priorityMatrix: highNeeds prima, tiebreak hash)
+  const hashStrT = (s: string) => s.split("").reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
+  const byScoreT = (a: typeof data.critItems[0], b: typeof data.critItems[0]) => {
+    const diff = (b.rel + b.crit) - (a.rel + a.crit);
+    return diff !== 0 ? diff : hashStrT(a.needId ?? a.label) - hashStrT(b.needId ?? b.label);
+  };
+  const highForTitle = [...data.critItems].filter(n => n.rel > 5 && n.crit > 5).sort(byScoreT);
+  const restForTitle = [...data.critItems].filter(n => !(n.rel > 5 && n.crit > 5)).sort(byScoreT);
+  const sortedForTitle = [...highForTitle, ...restForTitle];
   const cleanLabel = (s: string) => s.replace(/\)+\s*$/, "").trimEnd();
   const titleNeed1 = cleanLabel(sortedForTitle[0]?.label ?? "");
   const titleNeed2 = cleanLabel(sortedForTitle[1]?.label ?? "");

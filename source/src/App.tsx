@@ -783,12 +783,19 @@ export default function Home(){
     const activeReadiness2=readinessList2.find(r=>r.key===esgReadiness)!;
     const isCsrd2=companyDims[4]>=1000&&companyDims[0]>=450;
     const includedPrios2=priorities.filter(p=>priorityIncluded[p]);
-    const top72=dataNeeds.filter(n=>isNeedIncluded(n.id)).map(n=>{
-      const rel=needRelevance[n.id]??5;
+    // Replica ESATTA della logica di priorityMatrix (stesso Math.min, stessa separazione highNeeds/rest, stesso tiebreak hash)
+    const allNeedsMapped=dataNeeds.filter(n=>isNeedIncluded(n.id)).map(n=>{
+      const rel=Math.min(needRelevance[n.id]??5,10);
       const crit=needCriticality[n.id]??5;
       const tier=rel>7&&crit>7?"high":rel>4||crit>4?"medium":"low";
       return{...n,rel,crit,score:rel+crit,tier};
-    }).sort((a,b)=>b.score-a.score).slice(0,7);
+    });
+    const _h=(s:string)=>s.split("").reduce((a,c)=>((a<<5)-a+c.charCodeAt(0))|0,0);
+    const _byScore=(a:{score:number,id:string},b:{score:number,id:string})=>{const d=b.score-a.score;return d!==0?d:_h(a.id)-_h(b.id);};
+    const _high=allNeedsMapped.filter(n=>n.rel>5&&n.crit>5).sort(_byScore);
+    const _rest=allNeedsMapped.filter(n=>!(n.rel>5&&n.crit>5)).sort(_byScore);
+    // Nessun cap artificiale: passa tutti gli elementi ordinati (slide 6 ne mostra max 10)
+    const top72=[..._high,..._rest];
     const prioDescIt2=(()=>{
       const names=includedPrios2.map(p=>(t.priorityNames as Record<Priority,string>)[p]);
       if(names.length===0)return"Non sono stati selezionati obiettivi per l'analisi.";
