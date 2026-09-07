@@ -8,6 +8,26 @@ import iconEnergia     from "../public/obj-icon-efficiency.png?inline";
 import iconSupply      from "../public/obj-icon-supply.png?inline";
 import iconReputazione from "../public/obj-icon-reputation.png?inline";
 
+// ── Mappa chiave priority → label localizzata ────────────────────────────────
+const PRIORITY_LABEL_IT: Record<string, string> = {
+  credit:     "Accesso al credito e finanza ESG",
+  compliance: "Compliance e reporting",
+  customers:  "Clienti e mercato",
+  efficiency: "Efficienza operativa",
+  supply:     "Supply chain",
+  reputation: "Reputazione e persone",
+};
+const PRIORITY_LABEL_EN: Record<string, string> = {
+  credit:     "ESG credit & finance",
+  compliance: "Compliance & reporting",
+  customers:  "Customers & market",
+  efficiency: "Operational efficiency",
+  supply:     "Supply chain",
+  reputation: "Reputation & people",
+};
+const prioLabel = (key: string, isIt: boolean): string =>
+  (isIt ? PRIORITY_LABEL_IT[key] : PRIORITY_LABEL_EN[key]) ?? key;
+
 // ── Map PNG generator ─────────────────────────────────────────────────────────
 // Renders the same world-footprint image used in the app, with office pins
 // at the same % positions as CompanyScreen posMap. Returns a PNG data URL.
@@ -547,7 +567,7 @@ function replaceSlide7Recommendations(
     // Prendi solo la prima riga (riga "Moduli e funzionalità: ...")
     const descText = firstMod
       ? firstMod.split("\\n")[0]
-      : item ? `${item.priority}  ·  R:${item.rel} C:${item.crit}` : "";
+      : item ? `${prioLabel(item.priority, true)}  ·  R:${item.rel} C:${item.crit}` : "";
     xml = replaceShapeText(xml, titleId, titleText);
     xml = replaceShapeText(xml, DESC_IDS[i], descText);
   });
@@ -982,7 +1002,7 @@ function buildFindingsSummary(
   companyName: string
 ): string {
   const needs = data.critItems.slice(0, 5);
-  const prioNames = [...new Set(needs.map(n => n.priority))];
+  const prioNames = [...new Set(needs.map(n => prioLabel(n.priority, isIt)))];
   const caps = needs
     .map(n => {
       const mods = SCENARIO_MODULES[n.needId ?? ""];
@@ -1019,324 +1039,296 @@ async function appendReportFindings(
   isIt: boolean,
   companyName: string
 ): Promise<void> {
-  // Fetch the findings template
+  // Fetch Template_Bob_ordinabile.pptx
   let tplRes: Response;
   try {
-    tplRes = await fetch(`./report-findings-template.pptx?v=${Date.now()}`);
-    if (!tplRes.ok) return; // silent skip if template not present
-  } catch {
-    return;
-  }
+    tplRes = await fetch('./Template_Bob_ordinabile.pptx?v=' + Date.now());
+    if (!tplRes.ok) return;
+  } catch { return; }
   const tplBuf = await tplRes.arrayBuffer();
   const tplZip = await JSZip.loadAsync(tplBuf);
 
-  // How many slides does the main PPTX already have?
-  const presFile = mainZip.file("ppt/presentation.xml");
+  // Quante slide ha già il mainZip?
+  const presFile = mainZip.file('ppt/presentation.xml');
   if (!presFile) return;
-  let presXml = await presFile.async("string");
+  let presXml = await presFile.async('string');
   const existingSlideCount = (presXml.match(/<p:sldId /g) ?? []).length;
 
-  // ── Copy media from template (prefix rf_ to avoid collisions) ────────────
-  const tplMediaFiles = Object.keys(tplZip.files).filter(f => f.startsWith("ppt/media/"));
-  for (const mf of tplMediaFiles) {
-    const fname = mf.replace("ppt/media/", "");
-    const destPath = `ppt/media/rf_${fname}`;
-    if (!mainZip.file(destPath)) {
-      const bytes = await tplZip.file(mf)!.async("uint8array");
-      mainZip.file(destPath, bytes);
-    }
-  }
-
-
-  // ── Pre-carica icone obiettivo in mainZip (da import Vite — funziona anche da file://) ──
-  // dataUrlToBytes converte un data URL base64 o un URL relativo in Uint8Array
-  const dataUrlToBytes = async (url: string): Promise<Uint8Array | null> => {
-    try {
-      if (url.startsWith("data:")) {
-        const b64 = url.split(",")[1];
-        const bin = atob(b64);
-        const bytes = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-        return bytes;
-      }
-      const r = await fetch(url);
-      if (r.ok) return new Uint8Array(await r.arrayBuffer());
-    } catch { /* salta */ }
-    return null;
+  // Helper: converte data URL base64 in Uint8Array
+  const dataUrlToBytes = (url: string): Uint8Array | null => {
+    if (!url.startsWith('data:')) return null;
+    const b64 = url.split(',')[1];
+    if (!b64) return null;
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
   };
+
+  // Mappa icone obiettivo
   const ICON_MAP_IMPORTS: Record<string, string> = {
-    "obj-icon-credit.png":      iconCredito,
-    "obj-icon-compliance.png":  iconCompliance,
-    "obj-icon-customers.png":   iconClienti,
-    "obj-icon-efficiency.png":  iconEnergia,
-    "obj-icon-supply.png":      iconSupply,
-    "obj-icon-reputation.png":  iconReputazione,
+    'obj-icon-credit.png':      iconCredito,
+    'obj-icon-compliance.png':  iconCompliance,
+    'obj-icon-customers.png':   iconClienti,
+    'obj-icon-efficiency.png':  iconEnergia,
+    'obj-icon-supply.png':      iconSupply,
+    'obj-icon-reputation.png':  iconReputazione,
   };
+  const ICON_MAP: Record<string, string> = {
+    credit:     'obj-icon-credit.png',
+    compliance: 'obj-icon-compliance.png',
+    customers:  'obj-icon-customers.png',
+    efficiency: 'obj-icon-efficiency.png',
+    supply:     'obj-icon-supply.png',
+    reputation: 'obj-icon-reputation.png',
+  };
+
+  // Pre-carica icone nel mainZip
   for (const [iconFile, iconUrl] of Object.entries(ICON_MAP_IMPORTS)) {
     const mediaKey = `ppt/media/${iconFile}`;
     if (!mainZip.file(mediaKey)) {
-      const bytes = await dataUrlToBytes(iconUrl);
+      const bytes = dataUrlToBytes(iconUrl);
       if (bytes) mainZip.file(mediaKey, bytes);
     }
   }
 
-  // ── Nuovo template: 1 slide per priorità + 1 conclusioni ─────────────────
-  const top5 = data.critItems.slice(0, 5);
-  const tplTotalSlides = Object.keys(tplZip.files).filter(f =>
-    /^ppt\/slides\/slide\d+\.xml$/.test(f) && !f.includes("_rels")
-  ).length;
-  const FINDINGS_SLIDE_COUNT = tplTotalSlides;
-  const CONCLUSIONI_IDX = tplTotalSlides; // ultima slide = conclusioni
+  // Copia tutti i media del template nel mainZip (prefisso tob_)
+  for (const mf of Object.keys(tplZip.files).filter(f => f.startsWith('ppt/media/'))) {
+    const fname = mf.replace('ppt/media/', '');
+    const dest  = `ppt/media/tob_${fname}`;
+    if (!mainZip.file(dest)) mainZip.file(dest, await tplZip.file(mf)!.async('uint8array'));
+  }
 
-  for (let tplSlideIdx = 1; tplSlideIdx <= FINDINGS_SLIDE_COUNT; tplSlideIdx++) {
-    const newSlideNum = existingSlideCount + tplSlideIdx;
-    const tplSlidePath = `ppt/slides/slide${tplSlideIdx}.xml`;
-    const tplSlideRelsPath = `ppt/slides/_rels/slide${tplSlideIdx}.xml.rels`;
-    const tplSlideFile = tplZip.file(tplSlidePath);
-    if (!tplSlideFile) continue;
+  // Copia master/layout/theme dal template (prefisso tob)
+  const copyTobFile = async (src2: string, dest: string) => {
+    const f = tplZip.file(src2);
+    if (f && !mainZip.file(dest)) mainZip.file(dest, await f.async('uint8array'));
+  };
 
-    let slideXml = await tplSlideFile.async("string");
+  await copyTobFile('ppt/theme/theme1.xml',  'ppt/theme/tobTheme1.xml');
+  await copyTobFile('ppt/theme/theme2.xml',  'ppt/theme/tobTheme2.xml');
 
-    // ── Build rels from scratch: solo slideLayout1 + eventuali immagini ──────
-    const tplRelsFile = tplZip.file(tplSlideRelsPath);
-    let slideRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`;
-    slideRels += `<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="../slideLayouts/slideLayout1.xml"/>`;
-    if (tplRelsFile) {
-      const origRels = await tplRelsFile.async("string");
-      const imgRelRegex = /<Relationship[^>]*Type="[^"]*\/image"[^>]*Id="([^"]*)"[^>]*Target="[^"]*\/media\/([^"]+)"[^>]*\/>/g;
-      let imgMatch;
-      while ((imgMatch = imgRelRegex.exec(origRels)) !== null) {
-        slideRels += `<Relationship Id="${imgMatch[1]}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/rf_${imgMatch[2]}"/>`;
+  const tplMasters = Object.keys(tplZip.files)
+    .filter(f => /^ppt\/slideMasters\/slideMaster\d+\.xml$/.test(f) && !f.includes('_rels'));
+  for (const mf of tplMasters) {
+    const mName = mf.replace('ppt/slideMasters/', '').replace('.xml', '');
+    const tobMName = `tobMaster_${mName}`;
+    await copyTobFile(mf, `ppt/slideMasters/${tobMName}.xml`);
+    const relsF = tplZip.file(`ppt/slideMasters/_rels/${mName}.xml.rels`);
+    if (relsF) {
+      let relsXml = await relsF.async('string');
+      relsXml = relsXml
+        .replace(/Target="\.\.\/theme\/theme(\d+)\.xml"/g, (_: string, n: string) => `Target="../theme/tobTheme${n}.xml"`)
+        .replace(/Target="\.\.\/slideLayouts\/slideLayout(\d+)\.xml"/g, (_: string, n: string) => `Target="../slideLayouts/tobLayout${n}.xml"`);
+      mainZip.file(`ppt/slideMasters/_rels/${tobMName}.xml.rels`, relsXml);
+    }
+    const ct = mainZip.file('[Content_Types].xml');
+    if (ct) {
+      let ctXml = await ct.async('string');
+      if (!ctXml.includes(tobMName)) {
+        ctXml = ctXml.replace('</Types>', `<Override PartName="/ppt/slideMasters/${tobMName}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/></Types>`);
+        mainZip.file('[Content_Types].xml', ctXml);
       }
     }
-    slideRels += `</Relationships>`;
-
-    // ── Iniezione dati ────────────────────────────────────────────────────────
-    if (tplSlideIdx < CONCLUSIONI_IDX) {
-      const need = top5[tplSlideIdx - 1];
-
-      // Titolo rank
-      slideXml = slideXml.replace(/Priorità \d+: /g, xmlEsc(`Priorità ${tplSlideIdx}: `));
-
-      // Label sfida
-      const sfidaPlaceholder = "Emissioni e calcoli GHG Scope 1, 2 e 3 verificabili, tracciabili e riconciliabili";
-      slideXml = slideXml.replace(
-        new RegExp(escapeRe(sfidaPlaceholder), "g"),
-        xmlEsc(need ? need.label : "")
-      );
-
-      // Riduce font titolo (shape id=4) al 80%: 2400 → 1920
-      slideXml = slideXml.replace(
-        /(<p:sp>(?:(?!<p:sp>)[\s\S])*?<p:cNvPr[^>]*\bid="4"[^>]*>[\s\S]*?<\/p:sp>)/,
-        (spBlock) => spBlock.replace(/\bsz="2400"/g, `sz="1920"`)
-      );
-
-       // Obiettivo — una riga sola, sostituisce solo il testo dopo "Obiettivo: "
-      const OB_SHORT_IT: Record<string, string> = {
-        credit:     "Accesso al credito e finanza ESG",
-        compliance: "Compliance e reporting",
-        customers:  "Clienti e mercato",
-        efficiency: "Efficienza operativa",
-        supply:     "Supply chain",
-        reputation: "Reputazione e persone",
-      };
-      const OB_SHORT_EN: Record<string, string> = {
-        credit:     "ESG credit & finance",
-        compliance: "Compliance & reporting",
-        customers:  "Customers & market",
-        efficiency: "Operational efficiency",
-        supply:     "Supply chain",
-        reputation: "Reputation & people",
-      };
-      const obLabel = need
-        ? (isIt ? OB_SHORT_IT[need.priority] ?? need.priority : OB_SHORT_EN[need.priority] ?? need.priority)
-        : "";
-      // ── Helpers testo ──────────────────────────────────────────────────────────
-      // Run props Calibri 14pt normale e bold (leggermente ridotto per le 2 colonne)
-      const rpr  = `<a:rPr lang="it-IT" sz="1400" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
-      const rprBold = `<a:rPr lang="it-IT" sz="1400" b="1" dirty="0"><a:latin typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/><a:cs typeface="Calibri" panose="020F0502020204030204" pitchFamily="34" charset="0"/></a:rPr>`;
-      const para      = (rprStr: string, text: string) =>
-        `<a:p><a:r>${rprStr}<a:t>${xmlEsc(text)}</a:t></a:r></a:p>`;
-      const paraEmpty = () => `<a:p><a:endParaRPr lang="it-IT" sz="1400" dirty="0"/></a:p>`;
-      const makeTxBody = (content: string) =>
-        `<a:bodyPr wrap="square" rtlCol="0"><a:normAutofit/></a:bodyPr><a:lstStyle/>${content}`;
-
-      // ── Dati scenari ───────────────────────────────────────────────────────────
-      const selIdxs  = need ? (data.ucSelections?.[need.needId ?? ""] ?? []) : [];
-      const scenarios = need ? (data.ucScenarios?.[need.needId ?? ""] ?? []) : [];
-      // UC1, UC2 (massimo 2)
-      const ucPairs: Array<{ uc: string; colJ: string[] }> = selIdxs.length > 0
-        ? selIdxs.slice(0, 2).map(i => {
-            const ucText = scenarios[i] ?? "";
-            const needModules = need ? SCENARIO_MODULES[need.needId ?? ""] : undefined;
-            const raw = needModules?.[i] ?? "";
-            return { uc: ucText, colJ: raw ? raw.split("\\n").filter(Boolean) : [] };
-          })
-        : [{ uc: isIt ? "(nessuno scenario selezionato)" : "(no scenario selected)", colJ: [] }];
-
-      // ── Shape id=5: "Obiettivo: <label>" su una riga ──────────────────────────
-      // Usa il textbox esistente id=5 allargandolo a tutta la larghezza
-      const obTxBody = makeTxBody(
-        `<a:p><a:r>${rprBold}<a:t>${xmlEsc(isIt ? "Obiettivo: " : "Objective: ")}</a:t></a:r>` +
-        `<a:r>${rpr}<a:t>${xmlEsc(obLabel)}</a:t></a:r></a:p>`
-      );
-      slideXml = slideXml.replace(
-        /(<p:cNvPr id="5"[^>]*>[\s\S]*?<a:off x=")\d+(" y=")\d+("\/><a:ext cx=")\d+(" cy=")\d+(")/,
-        `$1343787$21077433$3${11504427}$4338554$5`
-      );
-      slideXml = slideXml.replace(
-        /(<p:cNvPr id="5"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
-        `$1${obTxBody}$2`
-      );
-
-      // ── Layout 2 colonne ───────────────────────────────────────────────────────
-      // 1 cm sotto obiettivo: y = 1077433 + 338554 + 360000 = 1775987 ≈ 1776000
-      const COL_Y     = 1776000;
-      const COL_SX_X  = 343786;
-      const COL_SX_CX = 5500000;
-      const COL_DX_X  = 6200000;
-      const COL_DX_CX = 5700000;
-      const COL_CY    = 4200000; // altezza colonne (si espande con autofit)
-
-      // Colonna sinistra: "Use case attuale" + scenari
-      const sxContent =
-        para(rprBold, isIt ? "Use case attuale" : "Current use case") +
-        ucPairs.map((p, i) =>
-          (i > 0 ? paraEmpty() + paraEmpty() : "") +  // 2 righe vuote tra UC1 e UC2
-          para(rpr, p.uc)
-        ).join("");
-      const sxTxBody = makeTxBody(sxContent);
-
-      // Colonna destra: "Use case evolutivo" + righe col J per ogni scenario
-      const dxContent =
-        para(rprBold, isIt ? "Use case evolutivo" : "Evolutionary use case") +
-        ucPairs.map((p, i) =>
-          (i > 0 ? paraEmpty() + paraEmpty() : "") +  // allineato con colonna sx
-          (p.colJ.length > 0
-            ? p.colJ.map(l => para(rpr, l)).join("")
-            : para(rpr, isIt ? "(non disponibile)" : "(not available)"))
-        ).join("");
-      const dxTxBody = makeTxBody(dxContent);
-
-      // Shape id=6 → colonna sinistra
-      slideXml = slideXml.replace(
-        /(<p:cNvPr id="6"[^>]*>[\s\S]*?<a:off x=")\d+(" y=")\d+("\/><a:ext cx=")\d+(" cy=")\d+(")/,
-        `$1${COL_SX_X}$2${COL_Y}$3${COL_SX_CX}$4${COL_CY}$5`
-      );
-      slideXml = slideXml.replace(
-        /(<p:cNvPr id="6"[^>]*>.*?<p:txBody>)[\s\S]*?(<\/p:txBody>)/,
-        `$1${sxTxBody}$2`
-      );
-
-      // Nuovo shape → colonna destra (aggiunto al spTree)
-      const dxShape =
-        `<p:sp><p:nvSpPr><p:cNvPr id="601" name="col_dx_${tplSlideIdx}"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr/></p:nvSpPr>` +
-        `<p:spPr><a:xfrm><a:off x="${COL_DX_X}" y="${COL_Y}"/><a:ext cx="${COL_DX_CX}" cy="${COL_CY}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>` +
-        `<p:txBody>${dxTxBody}</p:txBody></p:sp>`;
-      slideXml = slideXml.replace("</p:spTree>", dxShape + "</p:spTree>");
-
-      // ── Icona obiettivo in alto a destra ───────────────────────────────────────
-      const ICON_MAP: Record<string, string> = {
-        credit:     "obj-icon-credit.png",
-        compliance: "obj-icon-compliance.png",
-        customers:  "obj-icon-customers.png",
-        efficiency: "obj-icon-efficiency.png",
-        supply:     "obj-icon-supply.png",
-        reputation: "obj-icon-reputation.png",
-      };
-      const iconFile = need ? ICON_MAP[need.priority] : undefined;
-      if (iconFile) {
-        // Assicura che il file sia nel zip (potrebbe non essere stato caricato se fetch fallisce)
-        const mediaKey = `ppt/media/${iconFile}`;
-        if (!mainZip.file(mediaKey)) {
-          const iconUrl = ICON_MAP_IMPORTS[iconFile];
-          if (iconUrl) {
-            const bytes = await dataUrlToBytes(iconUrl);
-            if (bytes) mainZip.file(mediaKey, bytes);
-          }
-        }
-        const iconRid = `rIcon_${tplSlideIdx}`;
-        slideRels = slideRels.replace(
-          "</Relationships>",
-          `<Relationship Id="${iconRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${iconFile}"/></Relationships>`
-        );
-        // Posizione: in alto a sinistra, vicino al titolo obiettivo — x=343787, y=200000, cx=900000, cy=900000
-        const iconPic =
-          `<p:pic><p:nvPicPr><p:cNvPr id="602" name="icon_obj_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
-          `<p:blipFill><a:blip r:embed="${iconRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-          `<p:spPr><a:xfrm><a:off x="10800000" y="300000"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr></p:pic>`;
-        slideXml = slideXml.replace("</p:spTree>", iconPic + "</p:spTree>");
-      }
-
-    } else {
-      // Slide conclusioni
-      const summary = buildFindingsSummary(data, isIt, companyName);
-      slideXml = slideXml.replace(
-        new RegExp(escapeRe("Genera sintesi delle informazioni organizzate nella presentazione"), "g"),
-        xmlEsc(summary)
-      );
-      slideXml = slideXml.replace(
-        new RegExp(escapeRe("Raccomanda una analisi di adozione di nuova strategia digitale che indirizza l'analisi fatta"), "g"),
-        ""
-      );
-    }
-    // ── Inietta logo aziendale se presente ───────────────────────────────────
-    // Cerca il file logo già caricato nel zip dal codice principale
-    const logoEntry = Object.keys(mainZip.files).find(f =>
-      f.startsWith("ppt/media/logo_company.")
-    );
-    if (logoEntry) {
-      const logoExt = logoEntry.split(".").pop() ?? "png";
-      const logoRid = "rLogoFindings";
-      // Aggiungi la rel
-      slideRels = slideRels.replace(
-        "</Relationships>",
-        `<Relationship Id="${logoRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/logo_company.${logoExt}"/></Relationships>`
-      );
-      // Aggiungi la picture — stessa posizione delle slide principali
-      const logoPic =
-        `<p:pic><p:nvPicPr><p:cNvPr id="700" name="logo_findings_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
-        `<p:blipFill><a:blip r:embed="${logoRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-        `<p:spPr><a:xfrm><a:off x="10191750" y="228600"/><a:ext cx="1571625" cy="523875"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
-      slideXml = slideXml.replace("</p:spTree>", logoPic + "</p:spTree>");
-    }
-
-    // ── Write slide XML and rels into main zip ────────────────────────────────
-    const newSlidePath = `ppt/slides/slide${newSlideNum}.xml`;
-    const newSlideRelsPath = `ppt/slides/_rels/slide${newSlideNum}.xml.rels`;
-    mainZip.file(newSlidePath, slideXml);
-    mainZip.file(newSlideRelsPath, slideRels);
-
-    // ── Register in [Content_Types].xml ──────────────────────────────────────
-    const ctFile = mainZip.file("[Content_Types].xml");
-    if (ctFile) {
-      let ctXml = await ctFile.async("string");
-      const ctEntry = `<Override PartName="/ppt/slides/slide${newSlideNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;
-      if (!ctXml.includes(`slide${newSlideNum}.xml`)) {
-        ctXml = ctXml.replace("</Types>", `${ctEntry}</Types>`);
-        mainZip.file("[Content_Types].xml", ctXml);
-      }
-    }
-
-    // ── Register in presentation.xml sldIdLst ────────────────────────────────
-    const newSlideId = 300 + newSlideNum; // unique id well above existing
-    const sldIdEntry = `<p:sldId id="${newSlideId}" r:id="rFnd${newSlideNum}"/>`;
-    presXml = presXml.replace("</p:sldIdLst>", `${sldIdEntry}</p:sldIdLst>`);
-
-    // ── Register relationship in presentation.xml.rels ───────────────────────
-    const presRelsFile = mainZip.file("ppt/_rels/presentation.xml.rels");
-    if (presRelsFile) {
-      let presRels = await presRelsFile.async("string");
-      const relEntry = `<Relationship Id="rFnd${newSlideNum}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newSlideNum}.xml"/>`;
-      if (!presRels.includes(`rFnd${newSlideNum}`)) {
-        presRels = presRels.replace("</Relationships>", `${relEntry}</Relationships>`);
-        mainZip.file("ppt/_rels/presentation.xml.rels", presRels);
+    const pRelsF = mainZip.file('ppt/_rels/presentation.xml.rels');
+    if (pRelsF) {
+      let pRels = await pRelsF.async('string');
+      const rId = `rTobM_${mName}`;
+      if (!pRels.includes(rId)) {
+        pRels = pRels.replace('</Relationships>', `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/${tobMName}.xml"/></Relationships>`);
+        mainZip.file('ppt/_rels/presentation.xml.rels', pRels);
+        const masterId = 2000 + tplMasters.indexOf(mf);
+        presXml = presXml.replace('</p:sldMasterIdLst>', `<p:sldMasterId id="${masterId}" r:id="${rId}"/></p:sldMasterIdLst>`);
       }
     }
   }
 
-  // Write updated presentation.xml
-  mainZip.file("ppt/presentation.xml", presXml);
+  const tplLayouts = Object.keys(tplZip.files)
+    .filter(f => /^ppt\/slideLayouts\/slideLayout\d+\.xml$/.test(f) && !f.includes('_rels'));
+  for (const lf of tplLayouts) {
+    const lName = lf.replace('ppt/slideLayouts/', '').replace('.xml', '');
+    const tobLName = `tobLayout${lName.replace('slideLayout', '')}`;
+    await copyTobFile(lf, `ppt/slideLayouts/${tobLName}.xml`);
+    const relsF = tplZip.file(`ppt/slideLayouts/_rels/${lName}.xml.rels`);
+    if (relsF) {
+      let relsXml = await relsF.async('string');
+      relsXml = relsXml.replace(
+        /Target="\.\.\/slideMasters\/slideMaster(\d+)\.xml"/g,
+        (_: string, n: string) => `Target="../slideMasters/tobMaster_slideMaster${n}.xml"`
+      );
+      mainZip.file(`ppt/slideLayouts/_rels/${tobLName}.xml.rels`, relsXml);
+    }
+    const ct = mainZip.file('[Content_Types].xml');
+    if (ct) {
+      let ctXml = await ct.async('string');
+      if (!ctXml.includes(tobLName)) {
+        ctXml = ctXml.replace('</Types>', `<Override PartName="/ppt/slideLayouts/${tobLName}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"/></Types>`);
+        mainZip.file('[Content_Types].xml', ctXml);
+      }
+    }
+  }
+
+  // Assicura tipo PNG
+  {
+    const ct = mainZip.file('[Content_Types].xml');
+    if (ct) {
+      let ctXml = await ct.async('string');
+      if (!ctXml.includes('Extension="png"')) {
+        ctXml = ctXml.replace('</Types>', '<Default Extension="png" ContentType="image/png"/></Types>');
+        mainZip.file('[Content_Types].xml', ctXml);
+      }
+    }
+  }
+
+  // Helper: aggiunge una slide del template al mainZip
+  const addSlideFromTpl = async (
+    tplSlideNum: number,
+    newSlideNum: number,
+    extraReplacements: Array<[string, string]> = [],
+    iconPriorityKey?: string,
+    logoExt?: string
+  ) => {
+    const tplPath     = `ppt/slides/slide${tplSlideNum}.xml`;
+    const tplRelsPath = `ppt/slides/_rels/slide${tplSlideNum}.xml.rels`;
+    const tplSlide    = tplZip.file(tplPath);
+    if (!tplSlide) return;
+
+    let slideXml = await tplSlide.async('string');
+
+    for (const [ph, val] of extraReplacements) {
+      slideXml = slideXml.split(ph).join(xmlEsc(val));
+    }
+
+    const tplRelsFile2 = tplZip.file(tplRelsPath);
+    let slideRels = tplRelsFile2 ? await tplRelsFile2.async('string')
+      : '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+
+    slideRels = slideRels.replace(
+      /Target="\.\.\/slideLayouts\/slideLayout(\d+)\.xml"/g,
+      (_: string, n: string) => `Target="../slideLayouts/tobLayout${n}.xml"`
+    );
+    slideRels = slideRels.replace(
+      /Target="\.\.\/media\/([^"]+)"/g,
+      (_: string, fname: string) => `Target="../media/tob_${fname}"`
+    );
+
+    // Rimappa icona obiettivo
+    if (iconPriorityKey) {
+      const iconFile2 = ICON_MAP[iconPriorityKey];
+      if (iconFile2) {
+        const m = slideXml.match(/name="icon_obiettivo"[^>]*>[\s\S]*?r:embed="([^"]+)"/);
+        const iconRelId = m?.[1];
+        if (iconRelId) {
+          slideRels = slideRels.replace(
+            new RegExp(`Id="${iconRelId}"([^>]*)Target="[^"]*"`),
+            `Id="${iconRelId}"$1Target="../media/${iconFile2}"`
+          );
+        }
+      }
+    }
+
+    // Rimappa logo aziendale
+    if (logoExt) {
+      const m = slideXml.match(/name="logo_company"[^>]*>[\s\S]*?r:embed="([^"]+)"/);
+      const logoRelId = m?.[1];
+      if (logoRelId) {
+        slideRels = slideRels.replace(
+          new RegExp(`Id="${logoRelId}"([^>]*)Target="[^"]*"`),
+          `Id="${logoRelId}"$1Target="../media/logo_company.${logoExt}"`
+        );
+      }
+    }
+
+    mainZip.file(`ppt/slides/slide${newSlideNum}.xml`, slideXml);
+    mainZip.file(`ppt/slides/_rels/slide${newSlideNum}.xml.rels`, slideRels);
+
+    const ct = mainZip.file('[Content_Types].xml');
+    if (ct) {
+      let ctXml = await ct.async('string');
+      if (!ctXml.includes(`slide${newSlideNum}.xml`)) {
+        ctXml = ctXml.replace('</Types>',
+          `<Override PartName="/ppt/slides/slide${newSlideNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`);
+        mainZip.file('[Content_Types].xml', ctXml);
+      }
+    }
+
+    presXml = presXml.replace('</p:sldIdLst>',
+      `<p:sldId id="${400 + newSlideNum}" r:id="rTob${newSlideNum}"/></p:sldIdLst>`);
+
+    const pRelsF2 = mainZip.file('ppt/_rels/presentation.xml.rels');
+    if (pRelsF2) {
+      let pRels = await pRelsF2.async('string');
+      if (!pRels.includes(`rTob${newSlideNum}`)) {
+        pRels = pRels.replace('</Relationships>',
+          `<Relationship Id="rTob${newSlideNum}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newSlideNum}.xml"/></Relationships>`);
+        mainZip.file('ppt/_rels/presentation.xml.rels', pRels);
+      }
+    }
+  };
+
+  // Dati comuni
+  const top5 = data.critItems.slice(0, 5);
+  const logoEntry = Object.keys(mainZip.files).find(f => f.startsWith('ppt/media/logo_company.'));
+  const logoExt   = logoEntry?.split('.').pop();
+
+  // Slide 6: obiettivi
+  const prioItems = data.prioItems ?? [];
+  const slide6Reps: Array<[string, string]> = [];
+  for (let i = 1; i <= 6; i++) {
+    const item = prioItems[i - 1];
+    slide6Reps.push([`{{RANK_${i}}}`, item ? `${i}.` : '']);
+    slide6Reps.push([`{{OBIETTIVO_${i}}}`, item ? item.name : '']);
+    slide6Reps.push([`{{NOTE_OBIETTIVO_${i}}}`, item ? (item.note ?? item.detail ?? '') : '']);
+  }
+  await addSlideFromTpl(6, existingSlideCount + 1, slide6Reps, undefined, logoExt);
+
+  // Slide 8-12: 5 priorità
+  for (let i = 0; i < 5; i++) {
+    const need    = top5[i];
+    const tplNum  = 8 + i;
+    const newNum  = existingSlideCount + 2 + i;
+
+    const selIdxs   = need ? (data.ucSelections?.[need.needId ?? ''] ?? []) : [];
+    const scenarios2 = need ? (data.ucScenarios?.[need.needId ?? ''] ?? []) : [];
+    const ucPairs = selIdxs.length > 0
+      ? selIdxs.slice(0, 2).map((si: number) => {
+          const needModules = need ? SCENARIO_MODULES[need.needId ?? ''] : undefined;
+          const raw = needModules?.[si] ?? '';
+          return { uc: scenarios2[si] ?? '', colJ: raw ? raw.split('\n').filter(Boolean) : [] };
+        })
+      : [{ uc: isIt ? '(nessuno scenario selezionato)' : '(no scenario selected)', colJ: [] as string[] }];
+
+    const sxText = ucPairs.map((p: { uc: string; colJ: string[] }, idx: number) =>
+      (idx > 0 ? '\n\n' : '') + p.uc
+    ).join('');
+    const dxText = ucPairs.map((p: { uc: string; colJ: string[] }, idx: number) =>
+      (idx > 0 ? '\n\n' : '') + (p.colJ.length > 0 ? p.colJ.join('\n') : isIt ? '(non disponibile)' : '(not available)')
+    ).join('');
+
+    const obLabel2 = need ? prioLabel(need.priority, isIt) : '';
+    const reps: Array<[string, string]> = [
+      ['{{RANK}}',      need ? `${i + 1}` : ''],
+      ['{{SFIDA}}',     need ? need.label : ''],
+      ['{{OBIETTIVO}}', obLabel2],
+      ['{{TESTO_SX}}',  sxText],
+      ['{{TESTO_DX}}',  dxText],
+    ];
+    await addSlideFromTpl(tplNum, newNum, reps, need?.priority, logoExt);
+  }
+
+  // Slide 13: conclusioni
+  const summary = buildFindingsSummary(data, isIt, companyName);
+  const conclusioniText = isIt
+    ? 'Cinque esigenze prioritarie'
+    : 'Five priority needs';
+  // Cerca il testo della prima shape della slide 13 e lo sostituisce con il summary
+  const concReps: Array<[string, string]> = [
+    [conclusioniText, summary.split('\n')[0]],
+  ];
+  await addSlideFromTpl(13, existingSlideCount + 7, concReps, undefined, logoExt);
+
+  // Scrivi presentation.xml aggiornato
+  mainZip.file('ppt/presentation.xml', presXml);
 }
 
 // ── Escape regex special chars ────────────────────────────────────────────────
@@ -1700,9 +1692,15 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
           ""
         );
         zip.file(`ppt/slides/slide${i}.xml`, slideXml);
+      } else if (i === 2 || i === 3) {
+        // Slide 2 e 3: il logo è la <p:pic> con r:embed="rId3"
+        slideXml = slideXml.replace(
+          /(<p:pic>(?:(?!<p:pic>)[\s\S])*?r:embed=")rId3(")/,
+          `$1${logoRid}$2`
+        );
+        zip.file(`ppt/slides/slide${i}.xml`, slideXml);
       } else {
-        // Slides 2,5,6: replace existing logo_company picture's rId with the new one
-        // The picture is named "logo_company" in the template
+        // Slide 5, 6, 7: il logo è la <p:pic> con name="logo_company"
         slideXml = slideXml.replace(
           /(<p:pic>(?:(?!<p:pic>)[\s\S])*?<p:cNvPr[^>]*\bname="logo_company"[^>]*>[\s\S]*?r:embed=")([^"]+)(")/,
           `$1${logoRid}$3`
@@ -1903,6 +1901,23 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     await processSlide4FromFwTemplate(zip, data.frameworkChecks, resolvedCompanyName, slide4Title, isIt);
   }
 
+  // ── Fix logo slide 4 post fw-template ───────────────────────────────────────
+taxio  // processSlide4FromFwTemplate rimappa il rId3 del fw-template in rId_fw_rId3.
+  // Dobbiamo puntare quella immagine al logo aziendale (rId99).
+  if (companyLogo) {
+    const s4File = zip.file("ppt/slides/slide4.xml");
+    if (s4File) {
+      let s4Xml = await s4File.async("string");
+      const logoRid4 = "rId99";
+      // Rimappa rId_fw_rId3 (logo TCMG dal fw-template) → rId99 (logo aziendale)
+      s4Xml = s4Xml.replace(
+        /(<p:pic>(?:(?!<p:pic>)[\s\S])*?r:embed=")rId_fw_rId3(")/,
+        `$1${logoRid4}$2`
+      );
+      zip.file("ppt/slides/slide4.xml", s4Xml);
+    }
+  }
+
   // ── Numera tutte le slide ─────────────────────────────────────────────────────
   const allSlideFiles = Object.keys(zip.files).filter(f =>
     /^ppt\/slides\/slide\d+\.xml$/.test(f)
@@ -1938,8 +1953,35 @@ export async function generateTemplatePptx(data: SummaryPptxData): Promise<void>
     // continua comunque con il download senza le slides findings
   }
 
+  // ── Numera le slide findings (aggiunte dopo il loop principale) ──────────────
+  {
+    const findingsSlides = Object.keys(zip.files).filter(f =>
+      /^ppt\/slides\/slide(([7-9]|[1-9]\d+))\.xml$/.test(f)
+    );
+    for (const sf of findingsSlides) {
+      const slideFile = zip.file(sf);
+      if (!slideFile) continue;
+      let sxml = await slideFile.async("string");
+      if (!sxml.includes("SLIDENUM") && !sxml.includes("slidenum")) {
+        const slideIdx = sf.match(/slide(\d+)\.xml/)?.[1] ?? "1";
+        const fldId = `{B2C3D4E${slideIdx.padStart(2,"0")}-F5A6-7890-BCDE-F01234567890}`;
+        const pageNumShape =
+          `<p:sp><p:nvSpPr><p:cNvPr id="9902" name="pageNumFnd"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>` +
+          `<p:spPr><a:xfrm><a:off x="10800000" y="6400000"/><a:ext cx="1200000" cy="300000"/></a:xfrm>` +
+          `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr>` +
+          `<p:txBody><a:bodyPr rtlCol="0"/><a:lstStyle/>` +
+          `<a:p><a:fld id="${fldId}" type="slidenum">` +
+          `<a:rPr lang="it-IT" sz="1000" b="0" dirty="0"/>` +
+          `<a:t>${slideIdx}</a:t></a:fld></a:p></p:txBody></p:sp>`;
+        sxml = sxml.replace("</p:spTree>", pageNumShape + "</p:spTree>");
+        zip.file(sf, sxml);
+      }
+    }
+  }
+
   // Generate and download
   const outBuf = await zip.generateAsync({ type: "arraybuffer", compression: "DEFLATE" });
+
   const blob = new Blob([outBuf], { type: "application/vnd.openxmlformats-officedocument.presentationml.presentation" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
