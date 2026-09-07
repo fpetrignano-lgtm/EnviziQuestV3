@@ -50,9 +50,9 @@ const GEO_KEYS: SiteGeoKey[] = ["italia","europa","nordamerica","sudamerica","as
 const SITE_ROWS: SiteRowKey[] = ["uffici","ops","datacenter","altro"];
 
 const PRIO_ICONS: Record<string, string> = {
-  customers:"./obj-customers.png", compliance:"./obj-compliance.png",
-  credit:"./obj-credit.png", efficiency:"./obj-efficiency.png",
-  supply:"./obj-supply.png", reputation:"./obj-reputation.png",
+  customers:"./obj-icon-customers.png", compliance:"./obj-icon-compliance.png",
+  credit:"./obj-icon-credit.png", efficiency:"./obj-icon-efficiency.png",
+  supply:"./obj-icon-supply.png", reputation:"./obj-icon-reputation.png",
 };
 
 // Slide wrapper — proporzioni 16:9 scalate via CSS transform

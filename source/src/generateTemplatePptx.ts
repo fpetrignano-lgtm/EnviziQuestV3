@@ -1,12 +1,12 @@
 import JSZip from "jszip";
 import type { SummaryPptxData } from "./generateSummaryPptx";
 import { SCENARIO_MODULES } from "./constants";
-import iconCredito     from "../public/icon-credito.png";
-import iconCompliance  from "../public/icon-compliance.png";
-import iconClienti     from "../public/icon-clienti.png";
-import iconEnergia     from "../public/icon-energia.png";
-import iconSupply      from "../public/icon-supply.png";
-import iconReputazione from "../public/icon-reputazione.png";
+import iconCredito     from "../public/obj-icon-credit.png?inline";
+import iconCompliance  from "../public/obj-icon-compliance.png?inline";
+import iconClienti     from "../public/obj-icon-customers.png?inline";
+import iconEnergia     from "../public/obj-icon-efficiency.png?inline";
+import iconSupply      from "../public/obj-icon-supply.png?inline";
+import iconReputazione from "../public/obj-icon-reputation.png?inline";
 
 // ── Map PNG generator ─────────────────────────────────────────────────────────
 // Renders the same world-footprint image used in the app, with office pins
@@ -1065,12 +1065,12 @@ async function appendReportFindings(
     return null;
   };
   const ICON_MAP_IMPORTS: Record<string, string> = {
-    "icon-credito.png":     iconCredito,
-    "icon-compliance.png":  iconCompliance,
-    "icon-clienti.png":     iconClienti,
-    "icon-energia.png":     iconEnergia,
-    "icon-supply.png":      iconSupply,
-    "icon-reputazione.png": iconReputazione,
+    "obj-icon-credit.png":      iconCredito,
+    "obj-icon-compliance.png":  iconCompliance,
+    "obj-icon-customers.png":   iconClienti,
+    "obj-icon-efficiency.png":  iconEnergia,
+    "obj-icon-supply.png":      iconSupply,
+    "obj-icon-reputation.png":  iconReputazione,
   };
   for (const [iconFile, iconUrl] of Object.entries(ICON_MAP_IMPORTS)) {
     const mediaKey = `ppt/media/${iconFile}`;
@@ -1237,25 +1237,34 @@ async function appendReportFindings(
 
       // ── Icona obiettivo in alto a destra ───────────────────────────────────────
       const ICON_MAP: Record<string, string> = {
-        credit:     "icon-credito.png",
-        compliance: "icon-compliance.png",
-        customers:  "icon-clienti.png",
-        efficiency: "icon-energia.png",
-        supply:     "icon-supply.png",
-        reputation: "icon-reputazione.png",
+        credit:     "obj-icon-credit.png",
+        compliance: "obj-icon-compliance.png",
+        customers:  "obj-icon-customers.png",
+        efficiency: "obj-icon-efficiency.png",
+        supply:     "obj-icon-supply.png",
+        reputation: "obj-icon-reputation.png",
       };
       const iconFile = need ? ICON_MAP[need.priority] : undefined;
-      if (iconFile && mainZip.file(`ppt/media/${iconFile}`)) {
+      if (iconFile) {
+        // Assicura che il file sia nel zip (potrebbe non essere stato caricato se fetch fallisce)
+        const mediaKey = `ppt/media/${iconFile}`;
+        if (!mainZip.file(mediaKey)) {
+          const iconUrl = ICON_MAP_IMPORTS[iconFile];
+          if (iconUrl) {
+            const bytes = await dataUrlToBytes(iconUrl);
+            if (bytes) mainZip.file(mediaKey, bytes);
+          }
+        }
         const iconRid = `rIcon_${tplSlideIdx}`;
         slideRels = slideRels.replace(
           "</Relationships>",
           `<Relationship Id="${iconRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/${iconFile}"/></Relationships>`
         );
-        // Posizione: in alto a destra — x=10500000, y=200000, cx=1500000, cy=1500000
+        // Posizione: in alto a sinistra, vicino al titolo obiettivo — x=343787, y=200000, cx=900000, cy=900000
         const iconPic =
           `<p:pic><p:nvPicPr><p:cNvPr id="602" name="icon_obj_${tplSlideIdx}"/><p:cNvPicPr><a:picLocks noChangeAspect="1"/></p:cNvPicPr><p:nvPr/></p:nvPicPr>` +
           `<p:blipFill><a:blip r:embed="${iconRid}"/><a:stretch><a:fillRect/></a:stretch></p:blipFill>` +
-          `<p:spPr><a:xfrm><a:off x="10500000" y="200000"/><a:ext cx="1500000" cy="1500000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr></p:pic>`;
+          `<p:spPr><a:xfrm><a:off x="10800000" y="300000"/><a:ext cx="1000000" cy="1000000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/></p:spPr></p:pic>`;
         slideXml = slideXml.replace("</p:spTree>", iconPic + "</p:spTree>");
       }
 
